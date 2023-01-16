@@ -1,0 +1,17 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "author": "Тестовый пользователь",
+      "authorAvatar": "@sample/post_avatar",
+      "published": "15 января в 01:50",
+      "content": "Тестовый контент",
+      "coords": "62.057293;70.308480",
+      "link": "https://netomedia.ru",
+      "mention": 3,
+      "mentionedMe": true,
+      "likedByMe": true,
+      "likes": 100
+    }
+  ]
+}
