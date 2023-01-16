@@ -32,5 +32,11 @@
         android:id="@+id/newPostFragment"
         android:name="ru.netology.nework.ui.NewPostFragment"
         android:label="@string/add_post"
-        tools:layout="@layout/fragment_new_post" />
+        tools:layout="@layout/fragment_new_post" >
+        <argument
+            android:name="editingPost"
+            app:argType="ru.netology.nework.models.Post"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
 </navigation>

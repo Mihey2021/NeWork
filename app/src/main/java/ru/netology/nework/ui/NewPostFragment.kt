@@ -9,10 +9,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toFile
+import androidx.core.net.toUri
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.github.dhaval2404.imagepicker.constant.ImageProvider
 import com.google.android.material.snackbar.Snackbar
@@ -21,6 +23,7 @@ import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentNewPostBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
+import ru.netology.nework.models.AttachmentType
 import ru.netology.nework.models.Post
 import ru.netology.nework.models.PostCreated
 import ru.netology.nework.models.User
@@ -31,16 +34,18 @@ import ru.netology.nework.utils.getSerializable
 import ru.netology.nework.viewmodels.PostViewModel
 import javax.inject.Inject
 
-class NewPostFragment: Fragment(R.layout.fragment_new_post) {
+class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private val viewModel: PostViewModel by activityViewModels()
 
     @Inject
     lateinit var appAuth: AppAuth
 
-    private var fragmentBinding: FragmentNewPostBinding? = null
+    private lateinit var fragmentBinding: FragmentNewPostBinding
 
     private var authUser: User? = null
+
+    private val args: NewPostFragmentArgs by navArgs()
 
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -56,8 +61,9 @@ class NewPostFragment: Fragment(R.layout.fragment_new_post) {
         )
         fragmentBinding = binding
 
-        //val post = requireArguments().getSerializable(EDIT_POST_KEY, Post::class.java)
-        val post = requireArguments().getSerializable(EDIT_POST_KEY) as Post
+        val post = args.editingPost
+
+        initUi(post)
 
         setActionBarTitle(post != null)
         binding.edit.requestFocus()
@@ -131,7 +137,16 @@ class NewPostFragment: Fragment(R.layout.fragment_new_post) {
                 when (menuItem.itemId) {
                     R.id.save -> {
                         fragmentBinding?.let {
-                            viewModel.edit(if (post == null) PostCreated(0, "") else PostCreated(post.id, post.content, post.coords, post.link, post.attachment, post.mentionIds))
+                            viewModel.edit(
+                                if (post == null) PostCreated(0, "") else PostCreated(
+                                    post.id,
+                                    post.content,
+                                    post.coords,
+                                    post.link,
+                                    post.attachment,
+                                    post.mentionIds
+                                )
+                            )
                             viewModel.changeContent(it.edit.text.toString())
                             viewModel.save()
                             AndroidUtils.hideKeyboard(requireView())
@@ -150,9 +165,29 @@ class NewPostFragment: Fragment(R.layout.fragment_new_post) {
         return binding.root
     }
 
+    private fun initUi(post: Post?) {
+        if (post == null) return
+        val attachment = post.attachment
+        fragmentBinding.edit.setText(post.content)
+        when (attachment?.type) {
+            AttachmentType.IMAGE -> fragmentBinding.photo.setImageURI(attachment.url.toUri())
+            AttachmentType.VIDEO -> {
+                //TODO()
+            }
+            AttachmentType.AUDIO -> {
+                //TODO()
+            }
+            null -> {
+                //TODO()
+            }
+        }
+
+    }
+
     private fun setActionBarTitle(editing: Boolean) {
         val actionBar = (activity as AppCompatActivity).supportActionBar
-        actionBar?.title = if(editing) getString(R.string.edit_post) else getString(R.string.add_post)
+        actionBar?.title =
+            if (editing) getString(R.string.edit_post) else getString(R.string.add_post)
     }
 
     private fun showLogoutQuestionDialog() {
@@ -170,11 +205,7 @@ class NewPostFragment: Fragment(R.layout.fragment_new_post) {
     }
 
     override fun onDestroyView() {
-        fragmentBinding = null
+        //fragmentBinding = null
         super.onDestroyView()
-    }
-
-    companion object {
-        const val EDIT_POST_KEY = "EDIT_POST_KEY"
     }
 }

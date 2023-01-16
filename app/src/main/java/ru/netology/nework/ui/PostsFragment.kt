@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -24,9 +23,7 @@ import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.Post
-import ru.netology.nework.models.PostCreated
 import ru.netology.nework.models.User
-import ru.netology.nework.ui.NewPostFragment.Companion.EDIT_POST_KEY
 import ru.netology.nework.viewmodels.PostViewModel
 
 @AndroidEntryPoint
@@ -46,7 +43,8 @@ class PostsFragment : Fragment() {
         val adapter = PostsAdapter(object : OnInteractionListener {
             override fun onEdit(post: Post) {
                 //viewModel.edit(PostCreated(post.id, post.content, post.coords, post.link, post.attachment, post.mentionIds))
-                findNavController().navigate(R.id.action_feedFragment_to_newPostFragment, bundleOf(EDIT_POST_KEY to post))
+                val direction = FeedFragmentDirections.actionFeedFragmentToNewPostFragment(post)
+                findNavController().navigate(direction)
             }
 
             override fun onLike(post: Post) {
@@ -70,20 +68,25 @@ class PostsFragment : Fragment() {
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
             if (state.error) {
-                dialog = AppDialogs.getDialog(
-                    requireContext(),
-                    AppDialogs.ERROR_DIALOG,
-                    title = getString(R.string.an_error_has_occurred),
-                    message = state.errorMessage ?: getString(R.string.an_error_has_occurred),
-                    titleIcon = R.drawable.ic_baseline_error_24,
-                    isCancelable = true
-                )
+                showErrorDialog(state.errorMessage)
             }
         }
 
-        lifecycleScope.launch{
+        lifecycleScope.launch {
             viewModel.data.collectLatest { pagedData ->
                 adapter.submitData(pagedData)
+            }
+        }
+
+        lifecycleScope.launch {
+            adapter.loadStateFlow.collectLatest { loadState ->
+                when (val currentState = loadState.refresh) {
+                    is LoadState.Error -> {
+                        val extractedException = currentState.error
+                        showErrorDialog(extractedException.message)
+                    }
+                    else -> return@collectLatest
+                }
             }
         }
 
@@ -118,6 +121,17 @@ class PostsFragment : Fragment() {
         }
 
         return binding.root
+    }
+
+    private fun showErrorDialog(message: String?) {
+        dialog = AppDialogs.getDialog(
+            requireContext(),
+            AppDialogs.ERROR_DIALOG,
+            title = getString(R.string.an_error_has_occurred),
+            message = message ?: getString(R.string.an_error_has_occurred),
+            titleIcon = R.drawable.ic_baseline_error_24,
+            isCancelable = true
+        )
     }
 
     private fun setActionBarSubTitle(subTitle: String? = null) {
