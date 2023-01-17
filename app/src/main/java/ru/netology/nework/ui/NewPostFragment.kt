@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.*
+import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +16,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import com.bumptech.glide.Glide
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.github.dhaval2404.imagepicker.constant.ImageProvider
 import com.google.android.material.snackbar.Snackbar
@@ -23,10 +25,7 @@ import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentNewPostBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
-import ru.netology.nework.models.AttachmentType
-import ru.netology.nework.models.Post
-import ru.netology.nework.models.PostCreated
-import ru.netology.nework.models.User
+import ru.netology.nework.models.*
 import ru.netology.nework.utils.AndroidUtils
 import ru.netology.nework.utils.MenuState
 import ru.netology.nework.utils.MenuStates
@@ -116,7 +115,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         }
 
         viewModel.photo.observe(viewLifecycleOwner) {
-            if (it.uri == null) {
+            if (it.uri == null && post == null) {
                 binding.photoContainer.visibility = View.GONE
                 return@observe
             }
@@ -165,12 +164,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         return binding.root
     }
 
-    private fun initUi(post: Post?) {
+    private fun initUi(post: PostListItem?) {
         if (post == null) return
         val attachment = post.attachment
         fragmentBinding.edit.setText(post.content)
         when (attachment?.type) {
-            AttachmentType.IMAGE -> fragmentBinding.photo.setImageURI(attachment.url.toUri())
+            AttachmentType.IMAGE -> { loadImage(fragmentBinding.photo, attachment.url) }
             AttachmentType.VIDEO -> {
                 //TODO()
             }
@@ -182,6 +181,15 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             }
         }
 
+    }
+
+    private fun loadImage(imageView: ImageView, url: String){
+        Glide.with(imageView)
+            .load(url)
+            .placeholder(R.drawable.ic_baseline_loading_24)
+            .error(R.drawable.ic_baseline_non_loaded_image_24)
+            .timeout(10_000)
+            .into(imageView)
     }
 
     private fun setActionBarTitle(editing: Boolean) {

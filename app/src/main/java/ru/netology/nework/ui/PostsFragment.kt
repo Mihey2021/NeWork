@@ -23,6 +23,7 @@ import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.Post
+import ru.netology.nework.models.PostListItem
 import ru.netology.nework.models.User
 import ru.netology.nework.viewmodels.PostViewModel
 
@@ -33,6 +34,7 @@ class PostsFragment : Fragment() {
 
     private var dialog: AlertDialog? = null
     private var authUser: User? = null
+    private lateinit var adapter: PostsAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -40,61 +42,70 @@ class PostsFragment : Fragment() {
     ): View {
         val binding = FragmentPostsBinding.inflate(inflater)
 
-        val adapter = PostsAdapter(object : OnInteractionListener {
-            override fun onEdit(post: Post) {
+        adapter = PostsAdapter(object : OnInteractionListener {
+            override fun onEdit(post: PostListItem) {
                 //viewModel.edit(PostCreated(post.id, post.content, post.coords, post.link, post.attachment, post.mentionIds))
                 val direction = FeedFragmentDirections.actionFeedFragmentToNewPostFragment(post)
                 findNavController().navigate(direction)
             }
 
-            override fun onLike(post: Post) {
+            override fun onLike(post: PostListItem) {
                 if (!viewModel.authorized)
                     showAuthorizationQuestionDialog()
-                else
+                else {
                     viewModel.likeById(post.id, post.likedByMe)
+                }
             }
 
             override fun onLikeLongClick(userIds: List<Int>) {
                 Toast.makeText(requireContext(), userIds.toString(), Toast.LENGTH_LONG).show()
             }
 
-            override fun onRemove(post: Post) {
+            override fun onRemove(post: PostListItem) {
                 viewModel.removeById(post.id)
             }
         })
 
         binding.postsList.adapter = adapter
 
+//        viewModel.changingPost.observe(viewLifecycleOwner) {
+//            adapter.
+//        }
+
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
             if (state.error) {
-                showErrorDialog(state.errorMessage)
+                if (dialog?.isShowing == false || dialog == null) showErrorDialog(state.errorMessage)
             }
         }
 
         lifecycleScope.launch {
-            viewModel.data.collectLatest { pagedData ->
+            viewModel.localDataFlow.collectLatest { pagedData ->
                 adapter.submitData(pagedData)
             }
         }
 
-        lifecycleScope.launch {
+        lifecycleScope.launchWhenCreated {
             adapter.loadStateFlow.collectLatest { loadState ->
+                binding.swiperefresh.isRefreshing = loadState.refresh is LoadState.Loading
+                        || loadState.append is LoadState.Loading
+                        || loadState.prepend is LoadState.Loading
+
                 when (val currentState = loadState.refresh) {
                     is LoadState.Error -> {
+                        binding.progress.isVisible = false
                         val extractedException = currentState.error
-                        showErrorDialog(extractedException.message)
-                    }
-                    else -> return@collectLatest
-                }
-            }
-        }
+                        if (dialog?.isShowing == false || dialog == null) showErrorDialog(extractedException.message)
 
-        lifecycleScope.launchWhenCreated {
-            adapter.loadStateFlow.collectLatest {
-                binding.swiperefresh.isRefreshing = it.refresh is LoadState.Loading
-                        || it.append is LoadState.Loading
-                        || it.prepend is LoadState.Loading
+                    }
+                    LoadState.Loading -> {
+                        binding.progress.isVisible = true
+                    }
+                    else -> {
+                        binding.progress.isVisible = false
+                        return@collectLatest
+                    }
+                }
             }
         }
 

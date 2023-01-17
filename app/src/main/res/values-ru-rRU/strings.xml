@@ -34,7 +34,7 @@
     <string name="do_you_want_to_login">Вы не авторизованы.\nПройти авторизацию?</string>
     <string name="do_you_really_want_to_get_out">Вы действительно хотите выйти?\nВсе несохраненные данные будут потеряны.</string>
     <string name="yes_text">Да</string>
-    <string name="add_post">Добавить пост</string>
+    <string name="add_post">Новый пост</string>
     <string name="edit_post">Изменить пост</string>
     <string name="description_photo">Фото</string>
     <string name="remove">Удалить</string>

@@ -14,20 +14,23 @@ import ru.netology.nework.R
 import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.models.AttachmentType
 import ru.netology.nework.models.Post
+import ru.netology.nework.models.PostListItem
+import ru.netology.nework.view.load
 import ru.netology.nework.view.loadCircleCrop
+import ru.netology.nework.view.loadFromResource
 
 interface OnInteractionListener {
-    fun onLike(post: Post) {}
+    fun onLike(post: PostListItem) {}
     fun onLikeLongClick(userIds: List<Int>) {}
-    fun onEdit(post: Post) {}
-    fun onRemove(post: Post) {}
-    fun onMention(post: Post) {}
+    fun onEdit(post: PostListItem) {}
+    fun onRemove(post: PostListItem) {}
+    fun onMention(post: PostListItem) {}
     fun onPhotoView(photoUrl: String) {}
 }
 
 class PostsAdapter(
     private val onInteractionListener: OnInteractionListener,
-) : PagingDataAdapter<Post, PostViewHolder>(PostDiffCallback()) {
+) : PagingDataAdapter<PostListItem, PostViewHolder>(PostDiffCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
         val binding = PostCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return PostViewHolder(binding, onInteractionListener)
@@ -44,12 +47,12 @@ class PostViewHolder(
     private val onInteractionListener: OnInteractionListener,
 ) : RecyclerView.ViewHolder(binding.root) {
 
-    fun bind(post: Post) {
+    fun bind(post: PostListItem) {
         binding.apply {
             author.text = post.author
             published.text = post.published
             content.text = post.content
-            if (post.authorAvatar != null) avatar.loadCircleCrop(post.authorAvatar)
+            if (post.authorAvatar != null) avatar.loadCircleCrop(post.authorAvatar!!) else avatar.loadFromResource(R.drawable.ic_baseline_account_circle_24)
             coordinates.text = post.coords?.toString() ?: ""
             link.text = post.link
             like.isChecked = post.likedByMe
@@ -64,14 +67,14 @@ class PostViewHolder(
                 attachmentImageView.visibility = View.VISIBLE
 
                 Glide.with(attachmentImageView)
-                    .load(post.attachment.url)
+                    .load(post.attachment?.url)
                     .placeholder(R.drawable.ic_baseline_loading_24)
                     .error(R.drawable.ic_baseline_non_loaded_image_24)
                     .timeout(10_000)
                     .into(attachmentImageView)
 
                 attachmentImageView.setOnClickListener {
-                    onInteractionListener.onPhotoView(post.attachment.url)
+                    onInteractionListener.onPhotoView(post.attachment?.url ?: "")
                 }
             } else {
                 attachmentImageView.visibility = View.GONE
@@ -124,12 +127,14 @@ class PostViewHolder(
     }
 }
 
-class PostDiffCallback : DiffUtil.ItemCallback<Post>() {
-    override fun areItemsTheSame(oldItem: Post, newItem: Post): Boolean {
+class PostDiffCallback : DiffUtil.ItemCallback<PostListItem>() {
+    override fun areItemsTheSame(oldItem: PostListItem, newItem: PostListItem): Boolean {
         return oldItem.id == newItem.id
     }
 
-    override fun areContentsTheSame(oldItem: Post, newItem: Post): Boolean {
+    override fun areContentsTheSame(oldItem: PostListItem, newItem: PostListItem): Boolean {
         return oldItem == newItem
     }
+    //не применять анимацию (убрать "мерцание")
+    override fun getChangePayload(oldItem: PostListItem, newItem: PostListItem): Any = Unit
 }

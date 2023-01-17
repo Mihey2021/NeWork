@@ -31,17 +31,21 @@
             <FrameLayout
                 android:id="@+id/photoContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom">
 
                 <ImageView
                     android:id="@+id/photo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
+                    android:minHeight="100dp"
+                    android:minWidth="100dp"
                     android:contentDescription="@string/description_photo" />
 
-                <com.google.android.material.button.MaterialButton
+                <ImageButton
                     android:id="@+id/removePhoto"
+                    android:src="@drawable/ic_baseline_delete_24"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal|bottom"

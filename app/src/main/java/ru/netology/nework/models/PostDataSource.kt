@@ -14,9 +14,13 @@ class PostDataSource @Inject constructor(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Post> {
         return try {
             val position = params.key ?: 0
-            val response = apiService.getAllPosts()
-            val posts = response.body() ?: emptyList<Post>()
-            val nextKey = null//if(posts.isEmpty()) null else position + (params.loadSize / PAGE_SIZE)
+            val responseAllPosts = apiService.getAllPosts()
+            val posts = responseAllPosts.body() ?: emptyList<Post>()
+//            val nextKey = if(allPostsList.isEmpty()) null else position + (params.loadSize / PAGE_SIZE)
+//            val response = apiService.getAfter(allPostsList.minOfOrNull { it.id } ?: 0, nextKey ?: 0)
+//            val posts = response.body() ?: emptyList<Post>()
+            val nextKey = null
+
 
             LoadResult.Page(
                 data =  posts,

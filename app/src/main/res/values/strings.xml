@@ -33,7 +33,7 @@
     <string name="do_you_want_to_login">You are not logged in.\nPass authorization?</string>
     <string name="do_you_really_want_to_get_out">Do you really want to get out?\nAll unsaved data will be lost.</string>
     <string name="yes_text">Yes</string>
-    <string name="add_post">Add post</string>
+    <string name="add_post">New post</string>
     <string name="edit_post">Edit post</string>
     <string name="description_photo">Photo</string>
     <string name="remove">Remove</string>

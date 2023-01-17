@@ -6,6 +6,9 @@ import androidx.paging.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.auth.AppAuth
@@ -38,6 +41,10 @@ class PostViewModel @Inject constructor(
     val authUser: LiveData<User?>
         get() = _authUser
 
+    private val _changingPost: MutableLiveData<Post?> = MutableLiveData(null)
+    val changingPost: LiveData<Post?>
+        get() = _changingPost
+
 //    @OptIn(ExperimentalCoroutinesApi::class)
 //    val data: Flow<PagingData<Post>> = appAuth.authStateFlow
 //        .flatMapLatest { (myId, _) ->
@@ -47,22 +54,29 @@ class PostViewModel @Inject constructor(
 //                }
 //        }.flowOn(Dispatchers.Default)
 
-    @OptIn(ExperimentalPagingApi::class)
-    val data: Flow<PagingData<Post>> = Pager(
-        config = PagingConfig(
-            pageSize = PAGE_SIZE,
-            initialLoadSize = PAGE_SIZE,
-            enablePlaceholders = false
-        ),
-        pagingSourceFactory = { PostDataSource(apiService) },
-        remoteMediator = PostRemoteMediator(
-            apiService = apiService,
-            //postDao = postDao,
-            postRemoteKeyDao = postRemoteKeyDao,
-            appDb = appDb,
-        )
-    ).flow.cachedIn(viewModelScope)
+    val localDataFlow: Flow<PagingData<PostListItem>>
+    private val localChanges = LocalChanges()
+    private val localChangesFlow = MutableStateFlow(OnChange(localChanges))
 
+    init {
+        @OptIn(ExperimentalPagingApi::class)
+        val data: Flow<PagingData<Post>> = Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                initialLoadSize = PAGE_SIZE,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { PostDataSource(apiService) },
+            remoteMediator = PostRemoteMediator(
+                apiService = apiService,
+                //postDao = postDao,
+                postRemoteKeyDao = postRemoteKeyDao,
+                appDb = appDb,
+            )
+        ).flow.cachedIn(viewModelScope)
+
+        localDataFlow = combine(data, localChangesFlow, this::merge)
+    }
 
     private val _dataState = MutableLiveData<FeedModelState>()
     val dataState: LiveData<FeedModelState>
@@ -77,10 +91,23 @@ class PostViewModel @Inject constructor(
     val photo: LiveData<PhotoModel>
         get() = _photo
 
+    private fun merge(posts: PagingData<Post>, localChanges: OnChange<LocalChanges>): PagingData<PostListItem> {
+        return posts
+            .map { post ->
+                val likedFlag = localChanges.value.likesFlags[post.id]
+                val likedIds = localChanges.value.likedIds[post.id] ?: emptyList()
+                val postWithLocalChanges = if (likedFlag == null) post else post.copy(likedByMe = likedFlag, likeOwnerIds = likedIds)
+                PostListItem(postWithLocalChanges)
+            }
+    }
+
     fun likeById(id: Int, likeByMe: Boolean) {
         viewModelScope.launch {
             try {
-                repository.likeById(id, likeByMe)
+                val changingPost = repository.likeById(id, likeByMe)
+                localChanges.likesFlags[id] = changingPost.likedByMe
+                localChanges.likedIds[id] = changingPost.likeOwnerIds
+                localChangesFlow.value = OnChange(localChanges)
                 _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true)
@@ -147,4 +174,11 @@ class PostViewModel @Inject constructor(
             }
         }
     }
+}
+
+class OnChange<T>(val value: T)
+
+class LocalChanges {
+    val likesFlags = mutableMapOf<Int, Boolean>()
+    val likedIds = mutableMapOf<Int, List<Int>>()
 }

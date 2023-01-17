@@ -35,7 +35,7 @@
         tools:layout="@layout/fragment_new_post" >
         <argument
             android:name="editingPost"
-            app:argType="ru.netology.nework.models.Post"
+            app:argType="ru.netology.nework.models.PostListItem"
             app:nullable="true"
             android:defaultValue="@null" />
     </fragment>

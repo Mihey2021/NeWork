@@ -39,7 +39,7 @@ class PostRemoteMediator(
 
             }
             if (!result.isSuccessful)
-                throw HttpException(result)
+                return MediatorResult.Error(HttpException(result))
 
             val body = result.body() ?: throw ApiError(result.code(), result.message())
 

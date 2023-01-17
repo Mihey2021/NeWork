@@ -23,10 +23,10 @@ class PostRepositoryImpl @Inject constructor(
     appDb: AppDb,
 ) : PostRepository {
 
-    override suspend fun likeById(id: Int, likedByMe: Boolean) {
+    override suspend fun likeById(id: Int, likedByMe: Boolean): Post {
         if (likedByMe) {
-            disLikeById(id)
-            return
+            return disLikeById(id)
+
         }
 
         try {
@@ -34,7 +34,7 @@ class PostRepositoryImpl @Inject constructor(
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
             }
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
@@ -56,13 +56,13 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun disLikeById(id: Int) {
+    private suspend fun disLikeById(id: Int): Post {
         try {
             val response = apiService.dislikeById(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
             }
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
