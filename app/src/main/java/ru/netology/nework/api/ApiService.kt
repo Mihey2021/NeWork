@@ -1,6 +1,5 @@
 package ru.netology.nework.api
 
-import androidx.paging.PagingSource
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
@@ -62,7 +61,7 @@ interface ApiService {
     suspend fun getUserById(@Path("id") id: Int): Response<User>
 
     @POST("posts")
-    suspend fun save(@Body post: PostCreated): Response<Post>
+    suspend fun save(@Body post: PostCreateRequest): Response<Post>
 
     @Multipart
     @POST("media")

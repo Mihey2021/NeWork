@@ -2,42 +2,44 @@ package ru.netology.nework.models
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import retrofit2.HttpException
 import ru.netology.nework.api.ApiService
+import java.io.IOException
 import javax.inject.Inject
 
-const val PAGE_SIZE = 3
-const val STARTING_PAGE_INDEX = 1
+private var maxId: Int? = null
 
 class PostDataSource @Inject constructor(
     private val apiService: ApiService,
 ) : PagingSource<Int, Post>() {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Post> {
-        return try {
-            val position = params.key
-            val response =
-                if (position == null) {
-                    apiService.getLatest(params.loadSize)
-                } else {
-                    apiService.getBefore(params.key ?: -1, params.loadSize)
+        try {
+            val result = when (params) {
+                is LoadParams.Append -> {
+                    apiService.getBefore(id = params.key, count = params.loadSize)
                 }
-            val posts = response.body() ?: emptyList<Post>()
-            val nextKey = if (posts.isEmpty()) null else posts.last().id
+                is LoadParams.Prepend -> {
+                    apiService.getNewer(id = params.key)
+                    //return LoadResult.Page(data = emptyList(), nextKey = null, prevKey = params.key)
+                }
+                is LoadParams.Refresh -> {
+                    apiService.getLatest(params.loadSize)
+                }
+            }
+            if (!result.isSuccessful)
+                throw HttpException(result)
 
-
-            LoadResult.Page(
-                data = posts,
-                prevKey = null,//if (position == null) null else posts.firstOrNull()?.id,
-                nextKey = nextKey
+            val data = result.body().orEmpty()
+            return LoadResult.Page(
+                data = data,
+                prevKey = params.key,
+                nextKey = data.lastOrNull()?.id
             )
-        } catch (e: Exception) {
-            LoadResult.Error(e)
+        } catch (e: IOException) {
+            return LoadResult.Error(e)
         }
     }
 
-    override fun getRefreshKey(state: PagingState<Int, Post>): Int? {
-        return state.anchorPosition?.let { anchorPosition ->
-            state.closestPageToPosition(anchorPosition)?.data?.lastOrNull()?.id
-        }
-    }
+    override fun getRefreshKey(state: PagingState<Int, Post>): Int? = null
 }

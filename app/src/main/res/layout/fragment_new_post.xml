@@ -39,8 +39,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:minHeight="100dp"
-                    android:minWidth="100dp"
+                    android:minHeight="300dp"
+                    android:minWidth="300dp"
                     android:contentDescription="@string/description_photo" />
 
                 <ImageButton

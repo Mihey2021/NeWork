@@ -16,5 +16,5 @@ data class Post (
     val likedByMe: Boolean,
     val attachment: Attachment? = null,
     val ownedByMe: Boolean,
-    val users: Map<Long, UserPreview>,
+    val users: Map<Int, UserPreview>,
 ): java.io.Serializable

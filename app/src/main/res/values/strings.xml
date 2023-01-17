@@ -40,4 +40,7 @@
     <string name="description_select_photo">Select photo</string>
     <string name="description_take_photo">Take photo</string>
     <string name="save">Save</string>
+    <string name="retry_loading">Retry</string>
+    <string name="undefined">[Undefined]</string>
+    <string name="me_text">Me</string>
 </resources>

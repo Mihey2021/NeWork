@@ -1,6 +1,6 @@
 package ru.netology.nework.models
 
-data class PostCreated(
+data class PostCreateRequest(
     val id: Int,
     val content: String,
     val coords: Coordinates? = null,

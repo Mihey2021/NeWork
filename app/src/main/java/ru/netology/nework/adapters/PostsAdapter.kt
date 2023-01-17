@@ -15,13 +15,14 @@ import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.models.AttachmentType
 import ru.netology.nework.models.Post
 import ru.netology.nework.models.PostListItem
+import ru.netology.nework.models.UserPreview
 import ru.netology.nework.view.load
 import ru.netology.nework.view.loadCircleCrop
 import ru.netology.nework.view.loadFromResource
 
 interface OnInteractionListener {
     fun onLike(post: PostListItem) {}
-    fun onLikeLongClick(userIds: List<Int>) {}
+    fun onLikeLongClick(view: View, post: PostListItem) {}
     fun onEdit(post: PostListItem) {}
     fun onRemove(post: PostListItem) {}
     fun onMention(post: PostListItem) {}
@@ -105,8 +106,8 @@ class PostViewHolder(
             }
 
             like.setOnLongClickListener {
-                onInteractionListener.onLikeLongClick(post.likeOwnerIds)
-                showUsersPopupMenu(like, post.likeOwnerIds)
+                onInteractionListener.onLikeLongClick(like, post)
+//                showUsersPopupMenu(like, post.likeOwnerIds, post.users)
                 return@setOnLongClickListener true
             }
 
@@ -116,15 +117,15 @@ class PostViewHolder(
         }
     }
 
-    private fun showUsersPopupMenu(view: View, usersList: List<Int>) {
-        val popupMenu = PopupMenu(view.context, view)
-        usersList.forEach { popupMenu.menu.add(0, it, Menu.NONE, it.toString()) }
-
-        popupMenu.setOnMenuItemClickListener {
-            return@setOnMenuItemClickListener true
-        }
-        popupMenu.show()
-    }
+//    private fun showUsersPopupMenu(view: View, usersList: List<Int>, users: Map<Int, UserPreview>) {
+//        val popupMenu = PopupMenu(view.context, view)
+//        usersList.forEach { popupMenu.menu.add(0, it, Menu.NONE, users[it]?.name ?: "<Undefined>") }
+//
+//        popupMenu.setOnMenuItemClickListener {
+//            return@setOnMenuItemClickListener true
+//        }
+//        popupMenu.show()
+//    }
 }
 
 class PostDiffCallback : DiffUtil.ItemCallback<PostListItem>() {

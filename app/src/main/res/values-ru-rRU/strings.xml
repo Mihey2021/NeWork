@@ -41,4 +41,7 @@
     <string name="description_select_photo">Выбрать фото</string>
     <string name="description_take_photo">Сделать фото</string>
     <string name="save">Сохранить</string>
+    <string name="retry_loading">Повторить</string>
+    <string name="undefined">[Не определено]</string>
+    <string name="me_text">Я</string>
 </resources>

@@ -18,5 +18,5 @@ data class PostListItem(
     val likedByMe: Boolean get() = post.likedByMe
     val attachment: Attachment? get() = post.attachment
     val ownedByMe: Boolean get() = post.ownedByMe
-    val users: Map<Long, UserPreview> get() = post.users
+    val users: Map<Int, UserPreview> get() = post.users
 }

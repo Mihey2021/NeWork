@@ -2,8 +2,10 @@ package ru.netology.nework.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.netology.nework.R
 import ru.netology.nework.adapters.OnInteractionListener
+import ru.netology.nework.adapters.PostLoadingStateAdapter
 import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
@@ -25,6 +28,7 @@ import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.Post
 import ru.netology.nework.models.PostListItem
 import ru.netology.nework.models.User
+import ru.netology.nework.models.UserPreview
 import ru.netology.nework.viewmodels.PostViewModel
 
 @AndroidEntryPoint
@@ -57,8 +61,9 @@ class PostsFragment : Fragment() {
                 }
             }
 
-            override fun onLikeLongClick(userIds: List<Int>) {
-                Toast.makeText(requireContext(), userIds.toString(), Toast.LENGTH_LONG).show()
+            override fun onLikeLongClick(view: View, post: PostListItem) {
+                //Toast.makeText(requireContext(), userIds.toString(), Toast.LENGTH_LONG).show()
+                showUsersPopupMenu(view, post.likeOwnerIds, post.users)
             }
 
             override fun onRemove(post: PostListItem) {
@@ -66,7 +71,20 @@ class PostsFragment : Fragment() {
             }
         })
 
-        binding.postsList.adapter = adapter
+        binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
+            header = PostLoadingStateAdapter(object :
+                PostLoadingStateAdapter.OnInteractionListener {
+                override fun onRetry() {
+                    adapter.retry()
+                }
+            }),
+            footer = PostLoadingStateAdapter(object :
+                PostLoadingStateAdapter.OnInteractionListener {
+                override fun onRetry() {
+                    adapter.retry()
+                }
+            }),
+        )
 
 //        viewModel.changingPost.observe(viewLifecycleOwner) {
 //            adapter.
@@ -95,7 +113,9 @@ class PostsFragment : Fragment() {
                     is LoadState.Error -> {
                         binding.progress.isVisible = false
                         val extractedException = currentState.error
-                        if (dialog?.isShowing == false || dialog == null) showErrorDialog(extractedException.message)
+                        if (dialog?.isShowing == false || dialog == null) showErrorDialog(
+                            extractedException.message
+                        )
 
                     }
                     LoadState.Loading -> {
@@ -132,6 +152,23 @@ class PostsFragment : Fragment() {
         }
 
         return binding.root
+    }
+
+    private fun showUsersPopupMenu(view: View, usersList: List<Int>, users: Map<Int, UserPreview>) {
+        val popupMenu = PopupMenu(view.context, view)
+        usersList.forEach {
+            popupMenu.menu.add(
+                0,
+                it,
+                Menu.NONE,
+                if (authUser?.id == it) getString(R.string.me_text) else users[it]?.name ?: getString(R.string.undefined)
+            )
+        }
+
+        popupMenu.setOnMenuItemClickListener {
+            return@setOnMenuItemClickListener true
+        }
+        popupMenu.show()
     }
 
     private fun showErrorDialog(message: String?) {

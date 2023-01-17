@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toFile
-import androidx.core.net.toUri
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -29,7 +28,6 @@ import ru.netology.nework.models.*
 import ru.netology.nework.utils.AndroidUtils
 import ru.netology.nework.utils.MenuState
 import ru.netology.nework.utils.MenuStates
-import ru.netology.nework.utils.getSerializable
 import ru.netology.nework.viewmodels.PostViewModel
 import javax.inject.Inject
 
@@ -41,6 +39,8 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     lateinit var appAuth: AppAuth
 
     private lateinit var fragmentBinding: FragmentNewPostBinding
+
+    private var post: PostListItem? = null
 
     private var authUser: User? = null
 
@@ -60,7 +60,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         )
         fragmentBinding = binding
 
-        val post = args.editingPost
+        post = args.editingPost
 
         initUi(post)
 
@@ -107,7 +107,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         }
 
         binding.removePhoto.setOnClickListener {
-            viewModel.changePhoto(null, null)
+            if (post == null) {
+                viewModel.changePhoto(null, null)
+                return@setOnClickListener
+            }
+            fragmentBinding.photoContainer.visibility = View.GONE
+            post = post?.copy(post = post?.post!!.copy(attachment = null))
         }
 
         viewModel.postCreated.observe(viewLifecycleOwner) {
@@ -137,13 +142,13 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     R.id.save -> {
                         fragmentBinding?.let {
                             viewModel.edit(
-                                if (post == null) PostCreated(0, "") else PostCreated(
-                                    post.id,
-                                    post.content,
-                                    post.coords,
-                                    post.link,
-                                    post.attachment,
-                                    post.mentionIds
+                                if (post == null) PostCreateRequest(0, "") else PostCreateRequest(
+                                    post!!.id,
+                                    post!!.content,
+                                    post!!.coords,
+                                    post!!.link,
+                                    post!!.attachment,
+                                    post!!.mentionIds
                                 )
                             )
                             viewModel.changeContent(it.edit.text.toString())

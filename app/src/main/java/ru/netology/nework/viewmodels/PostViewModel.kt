@@ -8,28 +8,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.auth.AppAuth
-import ru.netology.nework.dao.PostRemoteKeyDao
-import ru.netology.nework.db.AppDb
 import ru.netology.nework.models.*
-import ru.netology.nework.repository.PostRemoteMediator
 import ru.netology.nework.repository.PostRepository
 import ru.netology.nework.utils.SingleLiveEvent
 import java.io.File
 import javax.inject.Inject
 
 private val noPhoto = PhotoModel()
+const val PAGE_SIZE = 1
 
 @HiltViewModel
 class PostViewModel @Inject constructor(
     private val repository: PostRepository,
     private val apiService: ApiService,
     private val appAuth: AppAuth,
-    postRemoteKeyDao: PostRemoteKeyDao,
-    appDb: AppDb,
 ) : ViewModel() {
 
     val authorized: Boolean
@@ -59,7 +54,6 @@ class PostViewModel @Inject constructor(
     private val localChangesFlow = MutableStateFlow(OnChange(localChanges))
 
     init {
-        @OptIn(ExperimentalPagingApi::class)
         val data: Flow<PagingData<Post>> = Pager(
             config = PagingConfig(
                 pageSize = PAGE_SIZE,
@@ -67,12 +61,6 @@ class PostViewModel @Inject constructor(
                 enablePlaceholders = false
             ),
             pagingSourceFactory = { PostDataSource(apiService) },
-            remoteMediator = PostRemoteMediator(
-                apiService = apiService,
-                //postDao = postDao,
-                postRemoteKeyDao = postRemoteKeyDao,
-                appDb = appDb,
-            )
         ).flow.cachedIn(viewModelScope)
 
         localDataFlow = combine(data, localChangesFlow, this::merge)
@@ -82,7 +70,7 @@ class PostViewModel @Inject constructor(
     val dataState: LiveData<FeedModelState>
         get() = _dataState
 
-    private val edited: MutableLiveData<PostCreated?> = MutableLiveData(null)
+    private val edited: MutableLiveData<PostCreateRequest?> = MutableLiveData(null)
     private val _postCreated = SingleLiveEvent<Unit>()
     val postCreated: LiveData<Unit>
         get() = _postCreated
@@ -91,12 +79,27 @@ class PostViewModel @Inject constructor(
     val photo: LiveData<PhotoModel>
         get() = _photo
 
-    private fun merge(posts: PagingData<Post>, localChanges: OnChange<LocalChanges>): PagingData<PostListItem> {
+    private fun merge(
+        posts: PagingData<Post>,
+        localChanges: OnChange<LocalChanges>
+    ): PagingData<PostListItem> {
         return posts
             .map { post ->
-                val likedFlag = localChanges.value.likesFlags[post.id]
-                val likedIds = localChanges.value.likedIds[post.id] ?: emptyList()
-                val postWithLocalChanges = if (likedFlag == null) post else post.copy(likedByMe = likedFlag, likeOwnerIds = likedIds)
+                val changingPost = localChanges.value.changingPosts[post.id]
+                val postWithLocalChanges =
+                    if (changingPost == null) post
+                    else post.copy(
+                        content = changingPost.content,
+                        coords = changingPost.coords,
+                        link = changingPost.link,
+                        likeOwnerIds = changingPost.likeOwnerIds,
+                        mentionIds = changingPost.mentionIds,
+                        mentionedMe = changingPost.mentionedMe,
+                        likedByMe = changingPost.likedByMe,
+                        attachment = changingPost.attachment,
+                        ownedByMe = changingPost.ownedByMe,
+                        users = changingPost.users,
+                    )
                 PostListItem(postWithLocalChanges)
             }
     }
@@ -105,14 +108,17 @@ class PostViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val changingPost = repository.likeById(id, likeByMe)
-                localChanges.likesFlags[id] = changingPost.likedByMe
-                localChanges.likedIds[id] = changingPost.likeOwnerIds
-                localChangesFlow.value = OnChange(localChanges)
+                makeChanges(changingPost)
                 _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true)
             }
         }
+    }
+
+    private fun makeChanges(changingPost: Post) {
+        localChanges.changingPosts[changingPost.id] = changingPost
+        localChangesFlow.value = OnChange(localChanges)
     }
 
     fun getUserById(id: Int) {
@@ -131,7 +137,7 @@ class PostViewModel @Inject constructor(
         _photo.value = PhotoModel(uri, file)
     }
 
-    fun edit(post: PostCreated) {
+    fun edit(post: PostCreateRequest) {
         edited.value = post
     }
 
@@ -179,6 +185,5 @@ class PostViewModel @Inject constructor(
 class OnChange<T>(val value: T)
 
 class LocalChanges {
-    val likesFlags = mutableMapOf<Int, Boolean>()
-    val likedIds = mutableMapOf<Int, List<Int>>()
+    val changingPosts = mutableMapOf<Int, Post>()
 }
