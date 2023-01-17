@@ -6,6 +6,7 @@ import ru.netology.nework.api.ApiService
 import javax.inject.Inject
 
 const val PAGE_SIZE = 3
+const val STARTING_PAGE_INDEX = 1
 
 class PostDataSource @Inject constructor(
     private val apiService: ApiService,
@@ -13,29 +14,30 @@ class PostDataSource @Inject constructor(
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Post> {
         return try {
-            val position = params.key ?: 0
-            val responseAllPosts = apiService.getAllPosts()
-            val posts = responseAllPosts.body() ?: emptyList<Post>()
-//            val nextKey = if(allPostsList.isEmpty()) null else position + (params.loadSize / PAGE_SIZE)
-//            val response = apiService.getAfter(allPostsList.minOfOrNull { it.id } ?: 0, nextKey ?: 0)
-//            val posts = response.body() ?: emptyList<Post>()
-            val nextKey = null
+            val position = params.key
+            val response =
+                if (position == null) {
+                    apiService.getLatest(params.loadSize)
+                } else {
+                    apiService.getBefore(params.key ?: -1, params.loadSize)
+                }
+            val posts = response.body() ?: emptyList<Post>()
+            val nextKey = if (posts.isEmpty()) null else posts.last().id
 
 
             LoadResult.Page(
-                data =  posts,
-                prevKey = if (position > 0) position - 1 else null,
+                data = posts,
+                prevKey = null,//if (position == null) null else posts.firstOrNull()?.id,
                 nextKey = nextKey
             )
         } catch (e: Exception) {
             LoadResult.Error(e)
         }
     }
+
     override fun getRefreshKey(state: PagingState<Int, Post>): Int? {
         return state.anchorPosition?.let { anchorPosition ->
-            state.closestPageToPosition(anchorPosition)?.prevKey?.plus(1)
-                ?:
-                state.closestPageToPosition(anchorPosition)?.prevKey?.minus(1)
+            state.closestPageToPosition(anchorPosition)?.data?.lastOrNull()?.id
         }
     }
 }
