@@ -67,8 +67,7 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = apiService.save(post)
             if (!response.isSuccessful) {
-                println("ERROR: ${response}")
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
 
             val body = response.body() ?: throw ApiError(response.code(), response.message())

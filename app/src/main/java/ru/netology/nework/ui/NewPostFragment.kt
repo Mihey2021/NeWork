@@ -1,14 +1,11 @@
 package ru.netology.nework.ui
 
 import android.app.Activity
-import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.*
 import android.widget.ImageView
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -16,13 +13,14 @@ import androidx.core.net.toFile
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.setFragmentResultListener
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.bumptech.glide.Glide
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.github.dhaval2404.imagepicker.constant.ImageProvider
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import ru.netology.nework.R
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentNewPostBinding
@@ -30,17 +28,11 @@ import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.*
 import ru.netology.nework.utils.AndroidUtils
-import ru.netology.nework.utils.MenuState
-import ru.netology.nework.utils.MenuStates
 import ru.netology.nework.viewmodels.PostViewModel
 import java.io.Serializable
 import javax.inject.Inject
 
-enum class IntentKeys(val key: String) {
-    INPUT_KEY("input_key"),
-    RESULT_KEY("result_key")
-}
-
+@AndroidEntryPoint
 class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private val viewModel: PostViewModel by activityViewModels()
@@ -52,7 +44,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private var post: PostListItem? = null
 
-    private var authUser: User? = null
     private var coordinates: Coordinates? = null
 
     private val args: NewPostFragmentArgs by navArgs()
@@ -129,16 +120,13 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         binding.coordinates.setOnClickListener {
             openMapFragment()
         }
-        binding.coordinatesImage.setOnClickListener {
-            openMapFragment()
-        }
 
         viewModel.postCreated.observe(viewLifecycleOwner) {
             findNavController().navigateUp()
         }
 
         viewModel.photo.observe(viewLifecycleOwner) {
-            if (it.uri == null && post == null) {
+            if (it.uri == null && post?.attachment == null) {
                 binding.photoContainer.visibility = View.GONE
                 return@observe
             }
@@ -146,9 +134,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             binding.photoContainer.visibility = View.VISIBLE
             binding.photo.setImageURI(it.uri)
         }
-
-        MenuState.setMenuState(MenuStates.HIDE_STATE)
-        requireActivity().invalidateMenu()
 
         requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -160,7 +145,11 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     R.id.save -> {
                         fragmentBinding?.let {
                             viewModel.edit(
-                                if (post == null) PostCreateRequest(id = 0, content = "", coords = coordinates) else PostCreateRequest(
+                                if (post == null) PostCreateRequest(
+                                    id = 0,
+                                    content = "",
+                                    coords = coordinates
+                                ) else PostCreateRequest(
                                     post!!.id,
                                     post!!.content,
                                     post!!.coords,
@@ -185,9 +174,13 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
         }, viewLifecycleOwner)
 
-        parentFragmentManager.setFragmentResultListener(MapFragment.REQUEST_CODE, viewLifecycleOwner) {_, data ->
-            val coordinates = getSerializable(data, MapFragment.EXTRA_COORDINATES, Coordinates::class.java)
-            if(post != null) post = post!!.copy(post = post!!.post.copy(coords = coordinates))
+        parentFragmentManager.setFragmentResultListener(
+            MapFragment.REQUEST_CODE,
+            viewLifecycleOwner
+        ) { _, data ->
+            coordinates =
+                getSerializable(data, MapFragment.EXTRA_COORDINATES, Coordinates::class.java)
+            if (post != null) post = post!!.copy(post = post!!.post.copy(coords = coordinates))
             updateCoordinatesText(coordinates)
         }
 
@@ -206,16 +199,25 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun updateCoordinatesText(coordinates: Coordinates?) {
-        fragmentBinding.coordinates.text = if (post?.coords == null) getString(R.string.set_location) else post!!.coords.toString()
+        if (post != null)
+            fragmentBinding.coordinates.text =
+                if (post?.coords == null) getString(R.string.set_location) else post!!.coords.toString()
+        else
+            fragmentBinding.coordinates.text =
+                coordinates?.toString() ?: getString(R.string.set_location)
     }
 
     private fun openMapFragment() {
-        val direction = NewPostFragmentDirections.actionNewPostFragmentToMapFragment(post?.coords)
+        val direction =
+            NewPostFragmentDirections.actionNewPostFragmentToMapFragment(coordinates = post?.coords)
         findNavController().navigate(direction)
     }
 
     private fun initUi(post: PostListItem?) {
-        if (post == null) return
+        if (post == null) {
+            updateCoordinatesText(coordinates)
+            return
+        }
         val attachment = post.attachment
         updateCoordinatesText(post.coords)
         with(fragmentBinding) {
@@ -266,31 +268,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     findNavController().navigateUp()
                 }
             })
-    }
-
-    class MarkersListActivityContract : ActivityResultContract<Int?, Coordinates?>() {
-        override fun createIntent(context: Context, input: Int?): Intent {
-            return Intent(context, MapFragment::class.java)
-                .putExtra(IntentKeys.INPUT_KEY.key, 0)
-        }
-
-        override fun parseResult(resultCode: Int, intent: Intent?): Coordinates? =
-            when {
-                resultCode != Activity.RESULT_OK -> null
-                else -> getSerializable(intent, IntentKeys.RESULT_KEY.key, Coordinates::class.java)
-            }
-
-        private fun <T : Serializable?> getSerializable(
-            intent: Intent?,
-            name: String,
-            clazz: Class<T>
-        ): T {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                intent?.getSerializableExtra(name, clazz)!!
-            else
-                intent?.getSerializableExtra(name) as T
-        }
-
     }
 
     override fun onDestroyView() {

@@ -55,21 +55,18 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
                 android:orientation="horizontal">
-
-                <ImageView
-                    android:id="@+id/coordinatesImage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/ic_baseline_user_marker"></ImageView>
 
                 <TextView
                     android:id="@+id/coordinates"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:textColor="@color/black"
                     android:layout_gravity="center"
-                    android:gravity="center_vertical"/>
+                    android:drawableLeft="@drawable/ic_baseline_user_marker"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/black" />
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -81,7 +78,8 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginRight="8dp"
                 android:hint="@string/link_text"
-                app:startIconDrawable="@drawable/ic_link">
+                app:startIconDrawable="@drawable/ic_link"
+                app:endIconMode="clear_text">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/linkText"
@@ -89,7 +87,8 @@
                     android:layout_height="wrap_content"
                     android:imeOptions="actionDone"
                     android:inputType="text"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColorHint="#757575" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
     </ScrollView>

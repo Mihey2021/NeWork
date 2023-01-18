@@ -151,10 +151,7 @@ class PostViewModel @Inject constructor(
     }
 
     fun changeLink(link: String) {
-        val link = link.trim()
-        if (edited.value?.link == link.ifBlank { null }) {
-            return
-        }
+        val link = link.trim().ifBlank { null }
         edited.value = edited.value?.copy(link = link)
     }
 
@@ -171,7 +168,7 @@ class PostViewModel @Inject constructor(
                     }
                     _dataState.value = FeedModelState()
                 } catch (e: Exception) {
-                    _dataState.value = FeedModelState(error = true)
+                    _dataState.value = FeedModelState(error = true, errorMessage = if (e.message?.isBlank() != false) e.stackTraceToString() else e.message)
                 }
             }
         }

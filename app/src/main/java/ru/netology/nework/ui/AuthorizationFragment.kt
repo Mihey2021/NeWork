@@ -41,9 +41,6 @@ class AuthorizationFragment : Fragment() {
 
         val binding = FragmentAuthorizationBinding.inflate(inflater, container, false)
 
-        MenuState.setMenuState(MenuStates.HIDE_STATE)
-        requireActivity().invalidateMenu()
-
         with(binding) {
             signInButton.setOnClickListener {
                 if (checkForm(binding)) {

@@ -24,6 +24,7 @@ import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
+import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.PostListItem
 import ru.netology.nework.models.User
 import ru.netology.nework.models.UserPreview
@@ -66,6 +67,10 @@ class PostsFragment : Fragment() {
 
             override fun onRemove(post: PostListItem) {
                 viewModel.removeById(post.id)
+            }
+
+            override fun onCoordinatesClick(coordinates: Coordinates) {
+                showMap(coordinates)
             }
         })
 
@@ -147,6 +152,11 @@ class PostsFragment : Fragment() {
         }
 
         return binding.root
+    }
+
+    private fun showMap(coordinates: Coordinates) {
+        val direction = FeedFragmentDirections.actionFeedFragmentToMapFragment(coordinates = coordinates, readOnly = true)
+        findNavController().navigate(direction)
     }
 
     private fun showUsersPopupMenu(view: View, usersList: List<Int>, users: Map<Int, UserPreview>) {

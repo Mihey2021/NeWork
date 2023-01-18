@@ -45,9 +45,6 @@ class RegistrationFragment : Fragment() {
 
         val binding =  FragmentRegistrationBinding.inflate(inflater, container, false)
 
-        MenuState.setMenuState(MenuStates.HIDE_STATE)
-        requireActivity().invalidateMenu()
-
         with(binding) {
             val pickPhotoLauncher =
                 registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {

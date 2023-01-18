@@ -100,10 +100,14 @@
             android:id="@+id/coordinates"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:drawableLeft="@drawable/ic_baseline_user_marker"
+            android:gravity="center_vertical"
             android:padding="8dp"
+            android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/attachmentImageView"
-            tools:text="@sample/post.json/data/coords" />
+            tools:text="@sample/post.json/data/coords"
+            tools:visibility="invisible" />
 
         <TextView
             android:id="@+id/link"

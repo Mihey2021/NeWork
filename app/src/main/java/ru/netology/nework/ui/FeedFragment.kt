@@ -74,4 +74,10 @@ class FeedFragment : Fragment() {
         MenuState.setMenuState(MenuStates.SHOW_STATE)
         requireActivity().invalidateMenu()
     }
+
+    override fun onPause() {
+        super.onPause()
+        MenuState.setMenuState(MenuStates.HIDE_STATE)
+        requireActivity().invalidateMenu()
+    }
 }

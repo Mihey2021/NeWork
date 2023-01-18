@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources.getDrawable
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
@@ -28,7 +29,8 @@ import ru.netology.nework.databinding.FragmentMapBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.Coordinates
-import ru.netology.nework.models.PostListItem
+import ru.netology.nework.utils.MenuState
+import ru.netology.nework.utils.MenuStates
 import ru.netology.nework.utils.extensions.setIcon
 import javax.inject.Inject
 
@@ -36,11 +38,12 @@ private lateinit var mapView: MapView
 private lateinit var mapObjects: MapObjectCollection
 
 @AndroidEntryPoint
-class MapFragment: Fragment(R.layout.fragment_map), InputListener {
+class MapFragment : Fragment(R.layout.fragment_map), InputListener {
 
     private val args: MapFragmentArgs by navArgs()
 
     private var coordinates: Coordinates? = null
+    private var readOnly: Boolean = false
 
     @Inject
     lateinit var appAuth: AppAuth
@@ -53,6 +56,10 @@ class MapFragment: Fragment(R.layout.fragment_map), InputListener {
         val binding = FragmentMapBinding.inflate(inflater, container, false)
 
         MapKitFactory.initialize(requireContext())
+
+        coordinates = args.coordinates
+        readOnly = args.readOnly
+        setActionBarTitle()
 
         mapView = binding.mapview
         mapView.map.addInputListener(this)
@@ -70,36 +77,44 @@ class MapFragment: Fragment(R.layout.fragment_map), InputListener {
         userLocationLayer.isVisible = true
         userLocationLayer.isHeadingEnabled = true
 
-        coordinates = args.post
-
-        if (coordinates!= null) {
-                addMarker(coordinates!!)
-                moveMapCamera(Point(coordinates!!.lat.toDouble(), coordinates!!.long.toDouble()))
+        if (coordinates != null) {
+            addMarker(coordinates!!)
+            moveMapCamera(Point(coordinates!!.lat.toDouble(), coordinates!!.long.toDouble()))
         }
 
-        requireActivity().addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                menuInflater.inflate(R.menu.editing_menu, menu)
-            }
-
-            override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
-                when (menuItem.itemId) {
-                    R.id.save -> {
-                        parentFragmentManager.setFragmentResult(REQUEST_CODE, bundleOf(
-                            EXTRA_COORDINATES to coordinates))
-                        findNavController().navigateUp()
-                        true
-                    }
-                    R.id.logout -> {
-                        showLogoutQuestionDialog()
-                        true
-                    }
-                    else -> false
+        if (!readOnly) {
+            requireActivity().addMenuProvider(object : MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                    menuInflater.inflate(R.menu.editing_menu, menu)
                 }
 
-        }, viewLifecycleOwner)
+                override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+                    when (menuItem.itemId) {
+                        R.id.save -> {
+                            parentFragmentManager.setFragmentResult(
+                                REQUEST_CODE, bundleOf(
+                                    EXTRA_COORDINATES to coordinates
+                                )
+                            )
+                            findNavController().navigateUp()
+                            true
+                        }
+                        R.id.logout -> {
+                            showLogoutQuestionDialog()
+                            true
+                        }
+                        else -> false
+                    }
 
+            }, viewLifecycleOwner)
+        }
         return binding.root
+    }
+
+    private fun setActionBarTitle() {
+        val actionBar = (activity as AppCompatActivity).supportActionBar
+        actionBar?.title =
+            if (readOnly) getString(R.string.location) else getString(R.string.set_location)
     }
 
     private fun onUserLocationClick() {
@@ -158,7 +173,7 @@ class MapFragment: Fragment(R.layout.fragment_map), InputListener {
     private fun moveMapCamera(coordinates: Point) {
         mapView.map.move(
             CameraPosition(coordinates, 15f, 0.0f, 0.0f),
-            Animation(Animation.Type.SMOOTH, 5f),
+            Animation(Animation.Type.SMOOTH, if(readOnly) 0f else 2f),
             null
         )
     }
@@ -170,7 +185,10 @@ class MapFragment: Fragment(R.layout.fragment_map), InputListener {
         }
 
     override fun onMapLongTap(map: Map, selectcoordinates: Point) {
-        coordinates = Coordinates(selectcoordinates.latitude.toString(), selectcoordinates.longitude.toString())
+        if (readOnly) return
+        val latitude = selectcoordinates.latitude.toString().substring(0, 9)
+        val longitude = selectcoordinates.longitude.toString().substring(0, 9)
+        coordinates = Coordinates(latitude, longitude)
         addMarker(coordinates!!)
     }
 
@@ -190,8 +208,9 @@ class MapFragment: Fragment(R.layout.fragment_map), InputListener {
     private val markerTapListener = MapObjectTapListener { mapObject, _ ->
         if (mapObject is PlacemarkMapObject) {
             val userMarker = mapObject.userData
-            if (userMarker is Coordinates)
-                clearMarkers()
+            if (userMarker is Coordinates) {
+                if (!readOnly) clearMarkers()
+            }
         }
         true
     }

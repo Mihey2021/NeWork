@@ -1,7 +1,7 @@
 package ru.netology.nework.adapters
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
@@ -12,13 +12,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import ru.netology.nework.R
 import ru.netology.nework.databinding.PostCardBinding
-import ru.netology.nework.models.AttachmentType
-import ru.netology.nework.models.Post
-import ru.netology.nework.models.PostListItem
-import ru.netology.nework.models.UserPreview
-import ru.netology.nework.view.load
+import ru.netology.nework.models.*
 import ru.netology.nework.view.loadCircleCrop
 import ru.netology.nework.view.loadFromResource
+import java.text.SimpleDateFormat
+import java.util.*
 
 interface OnInteractionListener {
     fun onLike(post: PostListItem) {}
@@ -27,6 +25,7 @@ interface OnInteractionListener {
     fun onRemove(post: PostListItem) {}
     fun onMention(post: PostListItem) {}
     fun onPhotoView(photoUrl: String) {}
+    fun onCoordinatesClick(coordinates: Coordinates) {}
 }
 
 class PostsAdapter(
@@ -51,10 +50,20 @@ class PostViewHolder(
     fun bind(post: PostListItem) {
         binding.apply {
             author.text = post.author
-            published.text = post.published
+            published.text = getFormattedDate(post.published)
             content.text = post.content
-            if (post.authorAvatar != null) avatar.loadCircleCrop(post.authorAvatar!!) else avatar.loadFromResource(R.drawable.ic_baseline_account_circle_24)
-            coordinates.text = post.coords?.toString() ?: ""
+            if (post.authorAvatar != null) avatar.loadCircleCrop(post.authorAvatar!!) else avatar.loadFromResource(
+                R.drawable.ic_baseline_account_circle_24
+            )
+            if (post.coords != null) {
+                coordinates.text = post.coords.toString()
+                coordinates.setOnClickListener {
+                    onInteractionListener.onCoordinatesClick(post.coords!!)
+                }
+                coordinates.visibility = View.VISIBLE
+            } else {
+                coordinates.visibility = View.GONE
+            }
             link.text = post.link
             like.isChecked = post.likedByMe
             like.text = "${post.likeOwnerIds.size}"
@@ -117,15 +126,19 @@ class PostViewHolder(
         }
     }
 
-//    private fun showUsersPopupMenu(view: View, usersList: List<Int>, users: Map<Int, UserPreview>) {
-//        val popupMenu = PopupMenu(view.context, view)
-//        usersList.forEach { popupMenu.menu.add(0, it, Menu.NONE, users[it]?.name ?: "<Undefined>") }
-//
-//        popupMenu.setOnMenuItemClickListener {
-//            return@setOnMenuItemClickListener true
-//        }
-//        popupMenu.show()
-//    }
+    @SuppressLint("SimpleDateFormat")
+    private fun getFormattedDate(published: String): CharSequence {
+        var formattedData = published
+        try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'")
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            val strToDate = sdf.parse(published)
+            formattedData = SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(strToDate).toString()
+        } catch (e: Exception) {
+            //Из API внезапно пришла дата в другом формате - Можно записать в лог для анализа
+        }
+        return formattedData
+    }
 }
 
 class PostDiffCallback : DiffUtil.ItemCallback<PostListItem>() {
@@ -136,6 +149,7 @@ class PostDiffCallback : DiffUtil.ItemCallback<PostListItem>() {
     override fun areContentsTheSame(oldItem: PostListItem, newItem: PostListItem): Boolean {
         return oldItem == newItem
     }
+
     //не применять анимацию (убрать "мерцание")
     override fun getChangePayload(oldItem: PostListItem, newItem: PostListItem): Any = Unit
 }

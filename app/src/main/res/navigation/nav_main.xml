@@ -51,9 +51,13 @@
         android:label="@string/set_location"
         tools:layout="@layout/fragment_map">
         <argument
-            android:name="post"
+            android:name="coordinates"
             android:defaultValue="@null"
             app:argType="ru.netology.nework.models.Coordinates"
             app:nullable="true" />
+        <argument
+            android:name="readOnly"
+            app:argType="boolean"
+            android:defaultValue="false" />
     </fragment>
 </navigation>
