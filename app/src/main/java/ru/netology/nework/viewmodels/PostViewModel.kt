@@ -36,9 +36,9 @@ class PostViewModel @Inject constructor(
     val authUser: LiveData<User?>
         get() = _authUser
 
-    private val _changingPost: MutableLiveData<Post?> = MutableLiveData(null)
-    val changingPost: LiveData<Post?>
-        get() = _changingPost
+//    private val _changingPost: MutableLiveData<PostListItem?> = MutableLiveData(null)
+//    val changingPost: LiveData<PostListItem?>
+//        get() = _changingPost
 
 //    @OptIn(ExperimentalCoroutinesApi::class)
 //    val data: Flow<PagingData<Post>> = appAuth.authStateFlow
@@ -71,6 +71,7 @@ class PostViewModel @Inject constructor(
         get() = _dataState
 
     private val edited: MutableLiveData<PostCreateRequest?> = MutableLiveData(null)
+
     private val _postCreated = SingleLiveEvent<Unit>()
     val postCreated: LiveData<Unit>
         get() = _postCreated
@@ -149,6 +150,14 @@ class PostViewModel @Inject constructor(
         edited.value = edited.value?.copy(content = text)
     }
 
+    fun changeLink(link: String) {
+        val link = link.trim()
+        if (edited.value?.link == link.ifBlank { null }) {
+            return
+        }
+        edited.value = edited.value?.copy(link = link)
+    }
+
     fun save() {
         edited.value?.let {
             _postCreated.value = Unit
@@ -174,7 +183,7 @@ class PostViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.removeById(id)
-                _dataState.value = FeedModelState()
+                _dataState.value = FeedModelState(needRefresh = true)
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true)
             }

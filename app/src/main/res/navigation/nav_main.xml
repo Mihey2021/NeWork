@@ -23,6 +23,9 @@
         <action
             android:id="@+id/action_feedFragment_to_newPostFragment"
             app:destination="@id/newPostFragment" />
+        <action
+            android:id="@+id/action_feedFragment_to_mapFragment"
+            app:destination="@id/mapFragment" />
     </fragment>
     <fragment
         android:id="@+id/registrationFragment"
@@ -38,5 +41,19 @@
             app:argType="ru.netology.nework.models.PostListItem"
             app:nullable="true"
             android:defaultValue="@null" />
+        <action
+            android:id="@+id/action_newPostFragment_to_mapFragment"
+            app:destination="@id/mapFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/mapFragment"
+        android:name="ru.netology.nework.ui.MapFragment"
+        android:label="@string/set_location"
+        tools:layout="@layout/fragment_map">
+        <argument
+            android:name="post"
+            android:defaultValue="@null"
+            app:argType="ru.netology.nework.models.Coordinates"
+            app:nullable="true" />
     </fragment>
 </navigation>

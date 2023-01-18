@@ -2,6 +2,7 @@ package ru.netology.nework.repository
 
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.internal.http.hasBody
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.errors.ApiError
 import ru.netology.nework.errors.AppError
@@ -66,10 +67,13 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = apiService.save(post)
             if (!response.isSuccessful) {
+                println("ERROR: ${response}")
                 throw ApiError(response.code(), response.message())
             }
 
             val body = response.body() ?: throw ApiError(response.code(), response.message())
+        } catch (e: ApiError) {
+            throw e
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
@@ -85,6 +89,8 @@ class PostRepositoryImpl @Inject constructor(
                 post.copy(attachment = Attachment(media.url, AttachmentType.IMAGE))
             save(postWithAttachment)
         } catch (e: AppError) {
+            throw e
+        } catch (e: ApiError) {
             throw e
         } catch (e: IOException) {
             throw NetworkError

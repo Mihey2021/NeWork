@@ -44,4 +44,12 @@
     <string name="retry_loading">Повторить</string>
     <string name="undefined">[Не определено]</string>
     <string name="me_text">Я</string>
+    <string name="link_text">Ссылка</string>
+    <string name="show_current_location">Показать текущее местоположение</string>
+    <string name="err_current_geo">Не удалось получить текущее местоположение: Проверьте доступ к геолокации на устройстве</string>
+    <string name="request_permission_geo_rationale">Пожалуйста, предоставьте доступ к геолокации чтобы мы могли сделать использование приложения удобным для Вас</string>
+    <string name="access_to_geo">Доступ к геолокации</string>
+    <string name="ok">Ok</string>
+    <string name="check_geo_permission">Проверьте разрешение на доступ к геолокации</string>
+    <string name="set_location">Установить место</string>
 </resources>

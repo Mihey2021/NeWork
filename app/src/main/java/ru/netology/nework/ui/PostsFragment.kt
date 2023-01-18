@@ -6,7 +6,6 @@ import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -25,7 +24,6 @@ import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
-import ru.netology.nework.models.Post
 import ru.netology.nework.models.PostListItem
 import ru.netology.nework.models.User
 import ru.netology.nework.models.UserPreview
@@ -86,12 +84,9 @@ class PostsFragment : Fragment() {
             }),
         )
 
-//        viewModel.changingPost.observe(viewLifecycleOwner) {
-//            adapter.
-//        }
-
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
+            if (state.needRefresh) adapter.refresh()
             if (state.error) {
                 if (dialog?.isShowing == false || dialog == null) showErrorDialog(state.errorMessage)
             }
@@ -156,12 +151,13 @@ class PostsFragment : Fragment() {
 
     private fun showUsersPopupMenu(view: View, usersList: List<Int>, users: Map<Int, UserPreview>) {
         val popupMenu = PopupMenu(view.context, view)
-        usersList.forEach {
+        usersList.forEach { userId ->
             popupMenu.menu.add(
                 0,
-                it,
+                userId,
                 Menu.NONE,
-                if (authUser?.id == it) getString(R.string.me_text) else users[it]?.name ?: getString(R.string.undefined)
+                if (authUser?.id == userId) getString(R.string.me_text) else users[userId]?.name
+                    ?: getString(R.string.undefined)
             )
         }
 

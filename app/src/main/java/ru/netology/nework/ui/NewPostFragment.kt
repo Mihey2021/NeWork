@@ -1,11 +1,14 @@
 package ru.netology.nework.ui
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.*
 import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +16,7 @@ import androidx.core.net.toFile
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.setFragmentResultListener
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.bumptech.glide.Glide
@@ -29,7 +33,13 @@ import ru.netology.nework.utils.AndroidUtils
 import ru.netology.nework.utils.MenuState
 import ru.netology.nework.utils.MenuStates
 import ru.netology.nework.viewmodels.PostViewModel
+import java.io.Serializable
 import javax.inject.Inject
+
+enum class IntentKeys(val key: String) {
+    INPUT_KEY("input_key"),
+    RESULT_KEY("result_key")
+}
 
 class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
@@ -43,6 +53,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     private var post: PostListItem? = null
 
     private var authUser: User? = null
+    private var coordinates: Coordinates? = null
 
     private val args: NewPostFragmentArgs by navArgs()
 
@@ -115,6 +126,13 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             post = post?.copy(post = post?.post!!.copy(attachment = null))
         }
 
+        binding.coordinates.setOnClickListener {
+            openMapFragment()
+        }
+        binding.coordinatesImage.setOnClickListener {
+            openMapFragment()
+        }
+
         viewModel.postCreated.observe(viewLifecycleOwner) {
             findNavController().navigateUp()
         }
@@ -142,7 +160,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     R.id.save -> {
                         fragmentBinding?.let {
                             viewModel.edit(
-                                if (post == null) PostCreateRequest(0, "") else PostCreateRequest(
+                                if (post == null) PostCreateRequest(id = 0, content = "", coords = coordinates) else PostCreateRequest(
                                     post!!.id,
                                     post!!.content,
                                     post!!.coords,
@@ -152,6 +170,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                                 )
                             )
                             viewModel.changeContent(it.edit.text.toString())
+                            viewModel.changeLink(it.linkText.text.toString())
                             viewModel.save()
                             AndroidUtils.hideKeyboard(requireView())
                         }
@@ -166,29 +185,61 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
         }, viewLifecycleOwner)
 
+        parentFragmentManager.setFragmentResultListener(MapFragment.REQUEST_CODE, viewLifecycleOwner) {_, data ->
+            val coordinates = getSerializable(data, MapFragment.EXTRA_COORDINATES, Coordinates::class.java)
+            if(post != null) post = post!!.copy(post = post!!.post.copy(coords = coordinates))
+            updateCoordinatesText(coordinates)
+        }
+
         return binding.root
+    }
+
+    private fun <T : Serializable?> getSerializable(
+        data: Bundle,
+        name: String,
+        clazz: Class<T>
+    ): T {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            data.getSerializable(name, clazz)!!
+        else
+            data.getSerializable(name) as T
+    }
+
+    private fun updateCoordinatesText(coordinates: Coordinates?) {
+        fragmentBinding.coordinates.text = if (post?.coords == null) getString(R.string.set_location) else post!!.coords.toString()
+    }
+
+    private fun openMapFragment() {
+        val direction = NewPostFragmentDirections.actionNewPostFragmentToMapFragment(post?.coords)
+        findNavController().navigate(direction)
     }
 
     private fun initUi(post: PostListItem?) {
         if (post == null) return
         val attachment = post.attachment
-        fragmentBinding.edit.setText(post.content)
-        when (attachment?.type) {
-            AttachmentType.IMAGE -> { loadImage(fragmentBinding.photo, attachment.url) }
-            AttachmentType.VIDEO -> {
-                //TODO()
-            }
-            AttachmentType.AUDIO -> {
-                //TODO()
-            }
-            null -> {
-                //TODO()
+        updateCoordinatesText(post.coords)
+        with(fragmentBinding) {
+            edit.setText(post.content)
+            linkText.setText(post.link)
+            when (attachment?.type) {
+                AttachmentType.IMAGE -> {
+                    loadImage(fragmentBinding.photo, attachment.url)
+                }
+                AttachmentType.VIDEO -> {
+                    //TODO()
+                }
+                AttachmentType.AUDIO -> {
+                    //TODO()
+                }
+                null -> {
+                    //TODO()
+                }
             }
         }
 
     }
 
-    private fun loadImage(imageView: ImageView, url: String){
+    private fun loadImage(imageView: ImageView, url: String) {
         Glide.with(imageView)
             .load(url)
             .placeholder(R.drawable.ic_baseline_loading_24)
@@ -215,6 +266,31 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     findNavController().navigateUp()
                 }
             })
+    }
+
+    class MarkersListActivityContract : ActivityResultContract<Int?, Coordinates?>() {
+        override fun createIntent(context: Context, input: Int?): Intent {
+            return Intent(context, MapFragment::class.java)
+                .putExtra(IntentKeys.INPUT_KEY.key, 0)
+        }
+
+        override fun parseResult(resultCode: Int, intent: Intent?): Coordinates? =
+            when {
+                resultCode != Activity.RESULT_OK -> null
+                else -> getSerializable(intent, IntentKeys.RESULT_KEY.key, Coordinates::class.java)
+            }
+
+        private fun <T : Serializable?> getSerializable(
+            intent: Intent?,
+            name: String,
+            clazz: Class<T>
+        ): T {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                intent?.getSerializableExtra(name, clazz)!!
+            else
+                intent?.getSerializableExtra(name) as T
+        }
+
     }
 
     override fun onDestroyView() {

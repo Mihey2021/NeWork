@@ -43,4 +43,12 @@
     <string name="retry_loading">Retry</string>
     <string name="undefined">[Undefined]</string>
     <string name="me_text">Me</string>
+    <string name="link_text">Link</string>
+    <string name="show_current_location">Show current location</string>
+    <string name="err_current_geo">Couldn\'t get the current location: Check the geolocation access on the device</string>
+    <string name="request_permission_geo_rationale">Please provide access to geolocation so that we can make the use of the application convenient for you</string>
+    <string name="access_to_geo">Access to geolocation</string>
+    <string name="ok">Ok</string>
+    <string name="check_geo_permission">Check the permission to access geolocation</string>
+    <string name="set_location">Set location</string>
 </resources>
