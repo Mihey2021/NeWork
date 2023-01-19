@@ -173,7 +173,7 @@ class MapFragment : Fragment(R.layout.fragment_map), InputListener {
     private fun moveMapCamera(coordinates: Point) {
         mapView.map.move(
             CameraPosition(coordinates, 15f, 0.0f, 0.0f),
-            Animation(Animation.Type.SMOOTH, if(readOnly) 0f else 2f),
+            Animation(Animation.Type.SMOOTH, 2f),
             null
         )
     }

@@ -25,9 +25,9 @@ import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.Coordinates
-import ru.netology.nework.models.PostListItem
-import ru.netology.nework.models.User
-import ru.netology.nework.models.UserPreview
+import ru.netology.nework.models.post.PostListItem
+import ru.netology.nework.models.user.User
+import ru.netology.nework.models.user.UserPreview
 import ru.netology.nework.viewmodels.PostViewModel
 
 @AndroidEntryPoint
@@ -130,7 +130,7 @@ class PostsFragment : Fragment() {
         }
 
         viewModel.authData.observe(viewLifecycleOwner) {
-            if (it != null) viewModel.getUserById(it.id) else setActionBarSubTitle()
+            if (it != null) viewModel.getUserById(it.id.toLong()) else setActionBarSubTitle()
             adapter.refresh()
         }
 
@@ -159,12 +159,12 @@ class PostsFragment : Fragment() {
         findNavController().navigate(direction)
     }
 
-    private fun showUsersPopupMenu(view: View, usersList: List<Int>, users: Map<Int, UserPreview>) {
+    private fun showUsersPopupMenu(view: View, usersList: List<Long>, users: Map<Long, UserPreview>) {
         val popupMenu = PopupMenu(view.context, view)
         usersList.forEach { userId ->
             popupMenu.menu.add(
                 0,
-                userId,
+                userId.toInt(),
                 Menu.NONE,
                 if (authUser?.id == userId) getString(R.string.me_text) else users[userId]?.name
                     ?: getString(R.string.undefined)

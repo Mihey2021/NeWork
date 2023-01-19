@@ -5,6 +5,9 @@ import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 import ru.netology.nework.models.*
+import ru.netology.nework.models.post.Post
+import ru.netology.nework.models.post.PostCreateRequest
+import ru.netology.nework.models.user.User
 
 interface ApiService {
     @FormUrlEncoded
@@ -37,28 +40,28 @@ interface ApiService {
 //    fun getAllPosts(): PagingSource<Int, Post>//Response<List<Post>>
 
     @GET("posts/{id}/newer")
-    suspend fun getNewer(@Path("id") id: Int): Response<List<Post>>
+    suspend fun getNewer(@Path("id") id: Long): Response<List<Post>>
 
     @GET("posts/{id}/before")
-    suspend fun getBefore(@Path("id") id: Int, @Query("count") count: Int): Response<List<Post>>
+    suspend fun getBefore(@Path("id") id: Long, @Query("count") count: Int): Response<List<Post>>
 
     @GET("posts/{id}/after")
-    suspend fun getAfter(@Path("id") id: Int, @Query("count") count: Int): Response<List<Post>>
+    suspend fun getAfter(@Path("id") id: Long, @Query("count") count: Int): Response<List<Post>>
 
     @GET("posts/latest")
     suspend fun getLatest(@Query("count") count: Int): Response<List<Post>>
 
     @POST("posts/{id}/likes")
-    suspend fun likeById(@Path("id") id: Int): Response<Post>
+    suspend fun likeById(@Path("id") id: Long): Response<Post>
 
     @DELETE("posts/{id}/likes")
-    suspend fun dislikeById(@Path("id") id: Int): Response<Post>
+    suspend fun dislikeById(@Path("id") id: Long): Response<Post>
 
     @GET("users")
     suspend fun getAllUsers(): Response<List<User>>
 
     @GET("users/{id}")
-    suspend fun getUserById(@Path("id") id: Int): Response<User>
+    suspend fun getUserById(@Path("id") id: Long): Response<User>
 
     @POST("posts")
     suspend fun save(@Body post: PostCreateRequest): Response<Post>
@@ -68,5 +71,5 @@ interface ApiService {
     suspend fun upload(@Part media: MultipartBody.Part): Response<Media>
 
     @DELETE("posts/{id}")
-    suspend fun removeById(@Path("id") id: Int): Response<Unit>
+    suspend fun removeById(@Path("id") id: Long): Response<Unit>
 }

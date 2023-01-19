@@ -1,4 +1,4 @@
-package ru.netology.nework.models
+package ru.netology.nework.models.user
 
 data class UserPreview(
     val name: String,

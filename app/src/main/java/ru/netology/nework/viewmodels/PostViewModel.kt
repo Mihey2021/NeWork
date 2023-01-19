@@ -12,13 +12,18 @@ import kotlinx.coroutines.launch
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.models.*
+import ru.netology.nework.models.post.Post
+import ru.netology.nework.models.post.PostCreateRequest
+import ru.netology.nework.models.post.PostDataSource
+import ru.netology.nework.models.post.PostListItem
+import ru.netology.nework.models.user.User
 import ru.netology.nework.repository.PostRepository
 import ru.netology.nework.utils.SingleLiveEvent
 import java.io.File
 import javax.inject.Inject
 
 private val noPhoto = PhotoModel()
-const val PAGE_SIZE = 1
+const val PAGE_SIZE = 100
 
 @HiltViewModel
 class PostViewModel @Inject constructor(
@@ -35,19 +40,6 @@ class PostViewModel @Inject constructor(
     private val _authUser: MutableLiveData<User?> = MutableLiveData(null)
     val authUser: LiveData<User?>
         get() = _authUser
-
-//    private val _changingPost: MutableLiveData<PostListItem?> = MutableLiveData(null)
-//    val changingPost: LiveData<PostListItem?>
-//        get() = _changingPost
-
-//    @OptIn(ExperimentalCoroutinesApi::class)
-//    val data: Flow<PagingData<Post>> = appAuth.authStateFlow
-//        .flatMapLatest { (myId, _) ->
-//            repository.data
-//                .map { posts ->
-//                    posts.map { it.copy(ownedByMe = it.authorId == myId) }
-//                }
-//        }.flowOn(Dispatchers.Default)
 
     val localDataFlow: Flow<PagingData<PostListItem>>
     private val localChanges = LocalChanges()
@@ -105,7 +97,7 @@ class PostViewModel @Inject constructor(
             }
     }
 
-    fun likeById(id: Int, likeByMe: Boolean) {
+    fun likeById(id: Long, likeByMe: Boolean) {
         viewModelScope.launch {
             try {
                 val changingPost = repository.likeById(id, likeByMe)
@@ -122,7 +114,7 @@ class PostViewModel @Inject constructor(
         localChangesFlow.value = OnChange(localChanges)
     }
 
-    fun getUserById(id: Int) {
+    fun getUserById(id: Long) {
         viewModelScope.launch {
             try {
                 _dataState.value = FeedModelState(loading = true)
@@ -166,7 +158,7 @@ class PostViewModel @Inject constructor(
                             repository.saveWithAttachment(it, MediaUpload(file))
                         }
                     }
-                    _dataState.value = FeedModelState()
+                    _dataState.value = FeedModelState(needRefresh = it.id == 0L)
                 } catch (e: Exception) {
                     _dataState.value = FeedModelState(error = true, errorMessage = if (e.message?.isBlank() != false) e.stackTraceToString() else e.message)
                 }
@@ -176,7 +168,7 @@ class PostViewModel @Inject constructor(
         _photo.value = noPhoto
     }
 
-    fun removeById(id: Int) {
+    fun removeById(id: Long) {
         viewModelScope.launch {
             try {
                 repository.removeById(id)
@@ -191,5 +183,5 @@ class PostViewModel @Inject constructor(
 class OnChange<T>(val value: T)
 
 class LocalChanges {
-    val changingPosts = mutableMapOf<Int, Post>()
+    val changingPosts = mutableMapOf<Long, Post>()
 }

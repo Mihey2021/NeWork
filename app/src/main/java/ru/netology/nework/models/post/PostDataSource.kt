@@ -1,4 +1,4 @@
-package ru.netology.nework.models
+package ru.netology.nework.models.post
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
@@ -11,9 +11,9 @@ private var maxId: Int? = null
 
 class PostDataSource @Inject constructor(
     private val apiService: ApiService,
-) : PagingSource<Int, Post>() {
+) : PagingSource<Long, Post>() {
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Post> {
+    override suspend fun load(params: LoadParams<Long>): LoadResult<Long, Post> {
         try {
             val result = when (params) {
                 is LoadParams.Append -> {
@@ -41,5 +41,5 @@ class PostDataSource @Inject constructor(
         }
     }
 
-    override fun getRefreshKey(state: PagingState<Int, Post>): Int? = null
+    override fun getRefreshKey(state: PagingState<Long, Post>): Long? = null
 }

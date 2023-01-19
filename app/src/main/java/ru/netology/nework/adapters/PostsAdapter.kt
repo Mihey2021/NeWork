@@ -13,6 +13,7 @@ import com.bumptech.glide.Glide
 import ru.netology.nework.R
 import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.models.*
+import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.view.loadCircleCrop
 import ru.netology.nework.view.loadFromResource
 import java.text.SimpleDateFormat

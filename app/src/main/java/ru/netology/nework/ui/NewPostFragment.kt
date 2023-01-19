@@ -13,7 +13,6 @@ import androidx.core.net.toFile
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.bumptech.glide.Glide
@@ -27,6 +26,8 @@ import ru.netology.nework.databinding.FragmentNewPostBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.*
+import ru.netology.nework.models.post.PostCreateRequest
+import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.utils.AndroidUtils
 import ru.netology.nework.viewmodels.PostViewModel
 import java.io.Serializable

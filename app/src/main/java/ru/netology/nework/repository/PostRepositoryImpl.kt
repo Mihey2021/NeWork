@@ -2,13 +2,15 @@ package ru.netology.nework.repository
 
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.internal.http.hasBody
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.errors.ApiError
 import ru.netology.nework.errors.AppError
 import ru.netology.nework.errors.NetworkError
 import ru.netology.nework.errors.UnknownError
 import ru.netology.nework.models.*
+import ru.netology.nework.models.post.Post
+import ru.netology.nework.models.post.PostCreateRequest
+import ru.netology.nework.models.user.User
 import java.io.IOException
 import javax.inject.Inject
 
@@ -16,7 +18,7 @@ class PostRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
 ) : PostRepository {
 
-    override suspend fun likeById(id: Int, likedByMe: Boolean): Post {
+    override suspend fun likeById(id: Long, likedByMe: Boolean): Post {
         if (likedByMe) {
             return disLikeById(id)
 
@@ -25,7 +27,7 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = apiService.likeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
             return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
@@ -35,11 +37,11 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserById(id: Int): User {
+    override suspend fun getUserById(id: Long): User {
         try {
             val response = apiService.getUserById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
             return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
@@ -49,11 +51,11 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun disLikeById(id: Int): Post {
+    private suspend fun disLikeById(id: Long): Post {
         try {
             val response = apiService.dislikeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
             return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
@@ -106,7 +108,7 @@ class PostRepositoryImpl @Inject constructor(
 
             val response = apiService.upload(media)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
 
             return response.body() ?: throw ApiError(response.code(), response.message())
@@ -117,11 +119,11 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun removeById(id: Int) {
+    override suspend fun removeById(id: Long) {
         try {
             val response = apiService.removeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.message())
+                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
             if (response.code() != 200) ApiError(response.code(), response.message())
         } catch (e: IOException) {
