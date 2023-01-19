@@ -26,4 +26,18 @@ class CommonRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAllUsers(): List<User> {
+        try {
+            val response = apiService.getAllUsers()
+            if (!response.isSuccessful) {
+                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+            }
+            return response.body() ?: throw ApiError(response.code(), response.message())
+        } catch (e: IOException) {
+            throw NetworkError
+        } catch (e: Exception) {
+            throw UnknownError
+        }
+    }
+
 }

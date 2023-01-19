@@ -6,7 +6,7 @@ import ru.netology.nework.models.Coordinates
 data class EventCreateRequest(
     val id: Long,
     val content: String,
-    val datetime: String? = null,
+    val datetime: String,
     val coords: Coordinates? = null,
     val type: EventType? = null,
     val attachment: Attachment? = null,

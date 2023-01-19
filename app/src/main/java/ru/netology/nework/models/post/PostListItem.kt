@@ -3,6 +3,7 @@ package ru.netology.nework.models.post
 import ru.netology.nework.models.Attachment
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
+import ru.netology.nework.models.event.EventType
 import ru.netology.nework.models.user.UserPreview
 
 data class PostListItem(
@@ -28,4 +29,5 @@ data class PostListItem(
     override val speakerIds: List<Long> get() = emptyList()
     override val participantsIds: List<Long> get() = emptyList()
     override val participatedByMe: Boolean get() = false
+    override val type: EventType get() = EventType.OFFLINE
 }

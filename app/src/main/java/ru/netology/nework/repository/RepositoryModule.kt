@@ -25,5 +25,4 @@ interface RepositoryModule {
     @Singleton
     @Binds
     fun bindsCommonRepository(impl: CommonRepositoryImpl) : CommonRepository
-
 }

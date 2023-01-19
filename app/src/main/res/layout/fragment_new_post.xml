@@ -46,7 +46,35 @@
                     android:layout_height="wrap_content"
                     android:imeOptions="actionDone"
                     android:inputType="none"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:labelFor="@id/eventTypeTextView"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/mentionUsersLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginRight="8dp"
+                android:hint="@string/mentioned_users"
+                app:errorEnabled="true"
+                app:startIconDrawable="@drawable/ic_baseline_peoples_24">
+
+<!--                <com.google.android.material.textfield.TextInputEditText-->
+<!--                    android:id="@+id/mentionUsersText"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:imeOptions="actionDone"-->
+<!--                    android:inputType="none"-->
+<!--                    android:maxLines="1" />-->
+                <TextView
+                    android:id="@+id/mentionUsersText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"/>
+
             </com.google.android.material.textfield.TextInputLayout>
 
             <FrameLayout
@@ -70,7 +98,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal|bottom"
                     android:src="@drawable/ic_baseline_clear_24"
-                    android:text="@string/remove" />
+                    android:text="@string/remove"
+                    android:contentDescription="@string/remove" />
             </FrameLayout>
 
             <LinearLayout
@@ -85,9 +114,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_gravity="center"
-                    android:drawableLeft="@drawable/ic_baseline_user_marker"
                     android:gravity="center_vertical"
-                    android:textColor="@color/black" />
+                    android:textColor="@color/black"
+                    app:drawableLeftCompat="@drawable/ic_baseline_user_marker" />
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout

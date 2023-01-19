@@ -53,4 +53,10 @@
     <string name="set_location">Set location</string>
     <string name="location">Location</string>
     <string name="event_type">Event type</string>
+    <string name="event_date_text">Date of the event</string>
+    <string name="attachment">Attachment</string>
+    <string name="user">User</string>
+    <string name="add_event">Add an event</string>
+    <string name="edit_event">Edit event</string>
+    <string name="mentioned_users">Mentioned users</string>
 </resources>

@@ -1,5 +1,6 @@
 package ru.netology.nework.models
 
+import ru.netology.nework.models.event.EventType
 import ru.netology.nework.models.user.UserPreview
 
 interface DataItem : java.io.Serializable {
@@ -11,6 +12,7 @@ interface DataItem : java.io.Serializable {
     val content: String
     val published: String
     val coords:	Coordinates?
+    val type: EventType
     val link: String?
     val likeOwnerIds: List<Long>
     val mentionIds: List<Long>

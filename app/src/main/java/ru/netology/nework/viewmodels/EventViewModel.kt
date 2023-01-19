@@ -15,10 +15,7 @@ import ru.netology.nework.models.FeedModelState
 import ru.netology.nework.models.MediaUpload
 import ru.netology.nework.models.PhotoModel
 import ru.netology.nework.models.Token
-import ru.netology.nework.models.event.Event
-import ru.netology.nework.models.event.EventCreateRequest
-import ru.netology.nework.models.event.EventDataSource
-import ru.netology.nework.models.event.EventListItem
+import ru.netology.nework.models.event.*
 import ru.netology.nework.models.user.User
 import ru.netology.nework.repository.CommonRepository
 import ru.netology.nework.repository.EventsRepository
@@ -150,6 +147,10 @@ class EventViewModel @Inject constructor(
     fun changeLink(link: String) {
         val link = link.trim().ifBlank { null }
         edited.value = edited.value?.copy(link = link)
+    }
+
+    fun changeEventType(eventType: EventType) {
+        edited.value = edited.value?.copy(type = eventType)
     }
 
     fun save() {

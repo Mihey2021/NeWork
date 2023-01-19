@@ -1,5 +1,6 @@
 package ru.netology.nework.ui
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
@@ -22,8 +23,8 @@ import com.github.dhaval2404.imagepicker.constant.ImageProvider
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import ru.netology.nework.R
+import ru.netology.nework.adapters.ArrayWithImageAdapter
 import ru.netology.nework.auth.AppAuth
-import ru.netology.nework.databinding.FragmentMapBinding
 import ru.netology.nework.databinding.FragmentNewPostBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
@@ -37,6 +38,9 @@ import ru.netology.nework.utils.AndroidUtils
 import ru.netology.nework.viewmodels.EventViewModel
 import ru.netology.nework.viewmodels.PostViewModel
 import java.io.Serializable
+import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.util.*
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -56,6 +60,10 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     private var coordinates: Coordinates? = null
 
     private val args: NewPostFragmentArgs by navArgs()
+    private var isNewPost: Boolean = false
+    private var isNewEvent: Boolean = false
+
+    private var selectedEventType: EventType = EventType.OFFLINE
 
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -73,8 +81,8 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
         //post = args.editingPost
         data = args.editingData
-        val isNewPost = args.isNewPost
-        val isNewEvent = args.isNewEvent
+        isNewPost = args.isNewPost
+        isNewEvent = args.isNewEvent
 //        if(data is PostListItem) {
 //            data = data as PostListItem
 //            viewModel = postViewModel
@@ -208,13 +216,13 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                                 saveInPostViewModel(
                                     viewModel = postViewModel,
                                     content = it.edit.text.toString(),
-                                    link = it.linkText.text.toString()
+                                    link = it.linkText.text.toString().trim().ifBlank { null }
                                 )
                             } else {
                                 saveInEventViewModel(
                                     viewModel = eventViewModel,
                                     content = it.edit.text.toString(),
-                                    link = it.linkText.text.toString()
+                                    link = it.linkText.text.toString().trim().ifBlank { null }
                                 )
                             }
                             AndroidUtils.hideKeyboard(requireView())
@@ -259,44 +267,54 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             data.getSerializable(name) as T
     }
 
-    private fun saveInEventViewModel(viewModel: EventViewModel, content: String, link: String) {
+    @SuppressLint("SimpleDateFormat")
+    private fun saveInEventViewModel(viewModel: EventViewModel, content: String, link: String?) {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'")
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        val eventDate = sdf.format(Date())
         viewModel.edit(
             if (data == null) EventCreateRequest(
                 id = 0,
-                content = "",
-                coords = coordinates
+                content = content,
+                coords = coordinates,
+                type = selectedEventType,
+                link = link,
+                datetime = eventDate,
             ) else EventCreateRequest(
                 id = data!!.id,
-                content = data!!.content,
+                content = content,
                 coords = data!!.coords,
-                link = data!!.link,
+                type = selectedEventType,
+                link = link,
                 attachment = data!!.attachment,
-                speakerIds = data!!.speakerIds
+                speakerIds = data!!.speakerIds,
+                datetime = eventDate,
             )
         )
-        viewModel.changeContent(content)
-        viewModel.changeLink(link)
+//        viewModel.changeContent(content)
+//        viewModel.changeLink(link)
+//        viewModel.changeEventType(selectedEventType)
         viewModel.save()
     }
 
-    private fun saveInPostViewModel(viewModel: PostViewModel, content: String, link: String) {
+    private fun saveInPostViewModel(viewModel: PostViewModel, content: String, link: String?) {
         viewModel.edit(
             if (data == null) PostCreateRequest(
                 id = 0,
-                content = "",
-                coords = coordinates
+                content = content,
+                coords = coordinates,
             ) else PostCreateRequest(
                 id = data!!.id,
-                content = data!!.content,
+                content = content,
                 coords = data!!.coords,
-                link = data!!.link,
+                link = link,
                 attachment = data!!.attachment,
                 mentionIds = data!!.mentionIds
             )
         )
 
-        viewModel.changeContent(content)
-        viewModel.changeLink(link)
+//        viewModel.changeContent(content)
+//        viewModel.changeLink(link ?: "")
         viewModel.save()
     }
 
@@ -316,8 +334,40 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun initUi(data: DataItem?) {
+        if (data is EventListItem || isNewEvent) {
+            with(fragmentBinding) {
+                eventTypeLayout.visibility = View.VISIBLE
+                val adapter = ArrayWithImageAdapter(
+                    requireContext(),
+                    R.layout.event_type_item,
+                    EventType.values()
+                )
+                eventTypeTextView.setAdapter(adapter)
+                eventTypeTextView.setText(
+                    if (isNewEvent) EventType.OFFLINE.toString() else data!!.type.toString(),
+                    false
+                )
+                eventTypeTextView.setOnItemClickListener { _, _, position, _ ->
+                    selectedEventType = EventType.values()[position]
+                }
+                mentionUsersLayout.visibility = View.GONE
+            }
+        } else {
+            with(fragmentBinding) {
+                eventTypeLayout.visibility = View.GONE
+                mentionUsersLayout.visibility = View.VISIBLE
+                mentionUsersText.setOnClickListener {
+                    findNavController().navigate(R.id.action_newPostFragment_to_userListFragment)
+                }
+                mentionUsersLayout.setOnClickListener {
+                    findNavController().navigate(R.id.action_newPostFragment_to_userListFragment)
+                }
+
+            }
+
+        }
+
         if (data == null) {
-            fragmentBinding.eventTypeTextView.setAdapter(ArrayAdapter<EventType>(requireContext(), android.R.layout.simple_list_item_1, EventType.values()))
             updateCoordinatesText(coordinates)
             return
         }
@@ -326,7 +376,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         with(fragmentBinding) {
             edit.setText(data.content)
             linkText.setText(data.link)
-            eventTypeTextView.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, EventType.values()))
             when (attachment?.type) {
                 AttachmentType.IMAGE -> {
                     loadImage(fragmentBinding.photo, attachment.url)
@@ -356,8 +405,14 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private fun setActionBarTitle(editing: Boolean) {
         val actionBar = (activity as AppCompatActivity).supportActionBar
-        actionBar?.title =
+
+        val title = if (data is PostListItem || isNewPost)
             if (editing) getString(R.string.edit_post) else getString(R.string.add_post)
+        else
+            if (editing) getString(R.string.edit_event) else getString(R.string.add_event)
+
+        actionBar?.title = title
+
     }
 
     private fun showLogoutQuestionDialog() {

@@ -24,7 +24,7 @@ data class Event(
     val link: String? = null,
     val ownedByMe: Boolean,
     val users: Map<Long, UserPreview>,
-)
+): java.io.Serializable
 
 enum class EventType {
     OFFLINE,

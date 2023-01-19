@@ -17,6 +17,7 @@ data class EventListItem(
     override val datetime: String get() = event.datetime
     override val published: String get() = event.published
     override val coords: Coordinates? get() = event.coords
+    override val type: EventType get() = event.type
     override val likeOwnerIds: List<Long> get() = event.likeOwnerIds
     override val likedByMe: Boolean get() = event.likedByMe
     override val speakerIds: List<Long> get() = event.speakerIds

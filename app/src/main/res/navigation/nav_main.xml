@@ -52,6 +52,9 @@
             android:name="isNewEvent"
             app:argType="boolean"
             android:defaultValue="false" />
+        <action
+            android:id="@+id/action_newPostFragment_to_userListFragment"
+            app:destination="@id/userListFragment" />
     </fragment>
     <fragment
         android:id="@+id/mapFragment"
@@ -68,4 +71,9 @@
             app:argType="boolean"
             android:defaultValue="false" />
     </fragment>
+    <fragment
+        android:id="@+id/userListFragment"
+        android:name="ru.netology.nework.ui.UserListFragment"
+        android:label="fragment_user_list"
+        tools:layout="@layout/fragment_user_list" />
 </navigation>

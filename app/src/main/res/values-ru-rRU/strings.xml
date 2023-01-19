@@ -54,4 +54,10 @@
     <string name="set_location">Установить место</string>
     <string name="location">Местоположение</string>
     <string name="event_type">Тип события</string>
+    <string name="event_date_text">Дата события</string>
+    <string name="attachment">Вложение</string>
+    <string name="user">Пользователь</string>
+    <string name="add_event">Добавить событие</string>
+    <string name="edit_event">Изменить событие</string>
+    <string name="mentioned_users">Упомянутые пользователи</string>
 </resources>

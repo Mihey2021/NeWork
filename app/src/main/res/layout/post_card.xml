@@ -83,76 +83,120 @@
             app:layout_constraintTop_toBottomOf="@id/header"
             tools:text="@sample/post.json/data/content" />
 
-        <ImageView
-            android:id="@+id/attachmentImageView"
-            android:layout_width="0dp"
+        <androidx.constraintlayout.widget.Group
+            android:id="@+id/eventDetailGroup"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/common_spacing"
-            android:layout_marginBottom="@dimen/common_spacing"
-            android:adjustViewBounds="true"
-            android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/content"
-            tools:srcCompat="@tools:sample/avatars" />
-
+            app:constraint_referenced_ids="eventDate, iconType, textType"
+            tools:layout_editor_absoluteX="16dp"
+            tools:layout_editor_absoluteY="16dp" />
         <TextView
-            android:id="@+id/coordinates"
-            android:layout_width="match_parent"
+            android:id="@+id/eventDate"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:drawableLeft="@drawable/ic_baseline_user_marker"
             android:gravity="center_vertical"
+            android:minHeight="24dp"
             android:padding="8dp"
             android:visibility="gone"
+            app:drawableLeftCompat="@drawable/ic_baseline_calendar_24"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/attachmentImageView"
-            tools:text="@sample/post.json/data/coords"
-            tools:visibility="invisible" />
+            app:layout_constraintTop_toBottomOf="@id/content"
+            tools:visibility="visible" />
+
+        <ImageView
+            android:id="@+id/iconType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:contentDescription="@string/event_type"
+            android:layout_margin="8dp"
+            android:src="@drawable/ic_baseline_circle_24"
+            app:tint="@color/online_color"
+            app:layout_constraintStart_toEndOf="@id/eventDate"
+            app:layout_constraintTop_toBottomOf="@id/content"
+            app:layout_constraintBottom_toBottomOf="@id/eventDate"/>
 
         <TextView
-            android:id="@+id/link"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:autoLink="web"
-            android:padding="8dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/coordinates"
-            tools:text="@sample/post.json/data/link" />
-
-        <androidx.constraintlayout.widget.Barrier
-            android:id="@+id/footer"
+            android:id="@+id/textType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:barrierDirection="bottom"
-            app:constraint_referenced_ids="link" />
+            android:layout_gravity="center_vertical"
+            android:layout_margin="8dp"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toEndOf="@id/iconType"
+            app:layout_constraintTop_toBottomOf="@id/content"
+            app:layout_constraintBottom_toBottomOf="@id/eventDate"/>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/like"
-            style="@style/Widget.NeWorkTheme.LikeCheckBox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checkable="true"
-            android:contentDescription="@string/description_post_like"
-            app:icon="@drawable/ic_like_24dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/footer"
-            tools:checked="@sample/post.json/data/likedByMe"
-            tools:text="@sample/post.json/data/likes" />
+    <ImageView
+        android:id="@+id/attachmentImageView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/common_spacing"
+        android:layout_marginBottom="@dimen/common_spacing"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/attachment"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/eventDate"
+        tools:srcCompat="@tools:sample/avatars" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/mention"
-            style="@style/Widget.NeWorkTheme.LikeCheckBox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/common_spacing"
-            android:contentDescription="@string/mentions"
-            android:checkable="true"
-            app:icon="@drawable/ic_link"
-            app:layout_constraintStart_toEndOf="@+id/like"
-            app:layout_constraintTop_toBottomOf="@id/footer"
-            tools:checked="@sample/post.json/data/mentionedMe"
-            tools:text="@sample/post.json/data/mention"/>
+    <TextView
+        android:id="@+id/coordinates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        app:drawableLeftCompat="@drawable/ic_baseline_user_marker"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/attachmentImageView"
+        tools:text="@sample/post.json/data/coords"
+        tools:visibility="visible" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    <TextView
+        android:id="@+id/link"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autoLink="web"
+        android:padding="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/coordinates"
+        tools:text="@sample/post.json/data/link" />
 
-</com.google.android.material.card.MaterialCardView>
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/footer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="link" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/like"
+        style="@style/Widget.NeWorkTheme.LikeCheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checkable="true"
+        android:contentDescription="@string/description_post_like"
+        app:icon="@drawable/ic_like_24dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/footer"
+        tools:checked="@sample/post.json/data/likedByMe"
+        tools:text="@sample/post.json/data/likes" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/mention"
+        style="@style/Widget.NeWorkTheme.LikeCheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/common_spacing"
+        android:checkable="true"
+        android:contentDescription="@string/mentions"
+        app:icon="@drawable/ic_link"
+        app:layout_constraintStart_toEndOf="@+id/like"
+        app:layout_constraintTop_toBottomOf="@id/footer"
+        tools:checked="@sample/post.json/data/mentionedMe"
+        tools:text="@sample/post.json/data/mention" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
