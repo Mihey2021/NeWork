@@ -83,6 +83,8 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         data = args.editingData
         isNewPost = args.isNewPost
         isNewEvent = args.isNewEvent
+
+        if(data is EventListItem) selectedEventType = data!!.type
 //        if(data is PostListItem) {
 //            data = data as PostListItem
 //            viewModel = postViewModel

@@ -5,12 +5,15 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp">
+    android:layout_marginLeft="8dp"
+    android:layout_marginRight="8dp"
+    android:layout_marginBottom="16dp">
 
     <ImageView
         android:id="@+id/avatar"
         android:layout_width="@dimen/posts_avatar_size"
         android:layout_height="@dimen/posts_avatar_size"
+        android:padding="4dp"
         android:layout_gravity="center_vertical"
         android:contentDescription="@string/user"
         tools:srcCompat="@sample/post.json/data/authorAvatar"
@@ -23,7 +26,7 @@
         android:layout_height="0dp"
         android:layout_gravity="center_vertical"
         android:layout_marginStart="8dp"
-        android:textSize="24sp"
+        android:textSize="18sp"
         android:gravity="center_vertical"
         app:layout_constraintStart_toEndOf="@id/avatar"
         app:layout_constraintEnd_toStartOf="@id/checkBox"
