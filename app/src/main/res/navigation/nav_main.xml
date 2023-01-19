@@ -37,13 +37,21 @@
         android:label="@string/add_post"
         tools:layout="@layout/fragment_new_post" >
         <argument
-            android:name="editingPost"
-            app:argType="ru.netology.nework.models.PostListItem"
-            app:nullable="true"
-            android:defaultValue="@null" />
+            android:name="isNewPost"
+            app:argType="boolean"
+            android:defaultValue="false" />
         <action
             android:id="@+id/action_newPostFragment_to_mapFragment"
             app:destination="@id/mapFragment" />
+        <argument
+            android:name="editingData"
+            app:argType="ru.netology.nework.models.DataItem"
+            app:nullable="true"
+            android:defaultValue="@null" />
+        <argument
+            android:name="isNewEvent"
+            app:argType="boolean"
+            android:defaultValue="false" />
     </fragment>
     <fragment
         android:id="@+id/mapFragment"

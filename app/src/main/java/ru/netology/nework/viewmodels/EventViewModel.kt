@@ -11,24 +11,26 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.auth.AppAuth
-import ru.netology.nework.models.*
-import ru.netology.nework.models.post.Post
-import ru.netology.nework.models.post.PostCreateRequest
-import ru.netology.nework.models.post.PostDataSource
-import ru.netology.nework.models.post.PostListItem
+import ru.netology.nework.models.FeedModelState
+import ru.netology.nework.models.MediaUpload
+import ru.netology.nework.models.PhotoModel
+import ru.netology.nework.models.Token
+import ru.netology.nework.models.event.Event
+import ru.netology.nework.models.event.EventCreateRequest
+import ru.netology.nework.models.event.EventDataSource
+import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.repository.CommonRepository
-import ru.netology.nework.repository.PostRepository
+import ru.netology.nework.repository.EventsRepository
 import ru.netology.nework.utils.SingleLiveEvent
 import java.io.File
 import javax.inject.Inject
 
 private val noPhoto = PhotoModel()
-const val PAGE_SIZE = 100
 
 @HiltViewModel
-class PostViewModel @Inject constructor(
-    private val repository: PostRepository,
+class EventViewModel @Inject constructor(
+    private val repository: EventsRepository,
     private val commonRepository: CommonRepository,
     private val apiService: ApiService,
     private val appAuth: AppAuth,
@@ -43,18 +45,18 @@ class PostViewModel @Inject constructor(
     val authUser: LiveData<User?>
         get() = _authUser
 
-    val localDataFlow: Flow<PagingData<PostListItem>>
-    private val localChanges = LocalChanges()
-    private val localChangesFlow = MutableStateFlow(OnChange(localChanges))
+    val localDataFlow: Flow<PagingData<EventListItem>>
+    private val localChanges = LocalChangesEvent()
+    private val localChangesFlow = MutableStateFlow(OnChangeEvent(localChanges))
 
     init {
-        val data: Flow<PagingData<Post>> = Pager(
+        val data: Flow<PagingData<Event>> = Pager(
             config = PagingConfig(
                 pageSize = PAGE_SIZE,
                 initialLoadSize = PAGE_SIZE,
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { PostDataSource(apiService) },
+            pagingSourceFactory = { EventDataSource(apiService) },
         ).flow.cachedIn(viewModelScope)
 
         localDataFlow = combine(data, localChangesFlow, this::merge)
@@ -64,46 +66,47 @@ class PostViewModel @Inject constructor(
     val dataState: LiveData<FeedModelState>
         get() = _dataState
 
-    private val edited: MutableLiveData<PostCreateRequest?> = MutableLiveData(null)
+    private val edited: MutableLiveData<EventCreateRequest?> = MutableLiveData(null)
 
-    private val _postCreated = SingleLiveEvent<Unit>()
-    val postCreated: LiveData<Unit>
-        get() = _postCreated
+    private val _eventCreated = SingleLiveEvent<Unit>()
+    val eventCreated: LiveData<Unit>
+        get() = _eventCreated
 
     private val _photo = MutableLiveData(noPhoto)
     val photo: LiveData<PhotoModel>
         get() = _photo
 
     private fun merge(
-        posts: PagingData<Post>,
-        localChanges: OnChange<LocalChanges>
-    ): PagingData<PostListItem> {
-        return posts
-            .map { post ->
-                val changingPost = localChanges.value.changingPosts[post.id]
-                val postWithLocalChanges =
-                    if (changingPost == null) post
-                    else post.copy(
-                        content = changingPost.content,
-                        coords = changingPost.coords,
-                        link = changingPost.link,
-                        likeOwnerIds = changingPost.likeOwnerIds,
-                        mentionIds = changingPost.mentionIds,
-                        mentionedMe = changingPost.mentionedMe,
-                        likedByMe = changingPost.likedByMe,
-                        attachment = changingPost.attachment,
-                        ownedByMe = changingPost.ownedByMe,
-                        users = changingPost.users,
+        events: PagingData<Event>,
+        localChanges: OnChangeEvent<LocalChangesEvent>
+    ): PagingData<EventListItem> {
+        return events
+            .map { event ->
+                val changingEvent = localChanges.value.changingEvents[event.id]
+                val eventWithLocalChanges =
+                    if (changingEvent == null) event
+                    else event.copy(
+                        content = changingEvent.content,
+                        coords = changingEvent.coords,
+                        link = changingEvent.link,
+                        likeOwnerIds = changingEvent.likeOwnerIds,
+                        speakerIds = changingEvent.speakerIds,
+                        participantsIds = changingEvent.participantsIds,
+                        participatedByMe = changingEvent.participatedByMe,
+                        likedByMe = changingEvent.likedByMe,
+                        attachment = changingEvent.attachment,
+                        ownedByMe = changingEvent.ownedByMe,
+                        users = changingEvent.users,
                     )
-                PostListItem(postWithLocalChanges)
+                EventListItem(eventWithLocalChanges)
             }
     }
 
     fun likeById(id: Long, likeByMe: Boolean) {
         viewModelScope.launch {
             try {
-                val changingPost = repository.likeById(id, likeByMe)
-                makeChanges(changingPost)
+                val changingEvent = repository.likeEventById(id, likeByMe)
+                makeChanges(changingEvent)
                 _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true)
@@ -111,9 +114,9 @@ class PostViewModel @Inject constructor(
         }
     }
 
-    private fun makeChanges(changingPost: Post) {
-        localChanges.changingPosts[changingPost.id] = changingPost
-        localChangesFlow.value = OnChange(localChanges)
+    private fun makeChanges(changingEvent: Event) {
+        localChanges.changingEvents[changingEvent.id] = changingEvent
+        localChangesFlow.value = OnChangeEvent(localChanges)
     }
 
     fun getUserById(id: Long) {
@@ -132,8 +135,8 @@ class PostViewModel @Inject constructor(
         _photo.value = PhotoModel(uri, file)
     }
 
-    fun edit(post: PostCreateRequest) {
-        edited.value = post
+    fun edit(event: EventCreateRequest) {
+        edited.value = event
     }
 
     fun changeContent(content: String) {
@@ -151,11 +154,11 @@ class PostViewModel @Inject constructor(
 
     fun save() {
         edited.value?.let {
-            _postCreated.value = Unit
+            _eventCreated.value = Unit
             viewModelScope.launch {
                 try {
                     when (_photo.value) {
-                        noPhoto -> repository.save(it)
+                        noPhoto -> repository.saveEvent(it)
                         else -> _photo.value?.file?.let { file ->
                             repository.saveWithAttachment(it, MediaUpload(file))
                         }
@@ -173,7 +176,7 @@ class PostViewModel @Inject constructor(
     fun removeById(id: Long) {
         viewModelScope.launch {
             try {
-                repository.removeById(id)
+                repository.removeEventById(id)
                 _dataState.value = FeedModelState(needRefresh = true)
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true)
@@ -182,8 +185,8 @@ class PostViewModel @Inject constructor(
     }
 }
 
-class OnChange<T>(val value: T)
+class OnChangeEvent<T>(val value: T)
 
-class LocalChanges {
-    val changingPosts = mutableMapOf<Long, Post>()
+class LocalChangesEvent {
+    val changingEvents = mutableMapOf<Long, Event>()
 }

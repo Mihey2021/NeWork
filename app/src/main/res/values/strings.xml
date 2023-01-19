@@ -52,4 +52,5 @@
     <string name="check_geo_permission">Check the permission to access geolocation</string>
     <string name="set_location">Set location</string>
     <string name="location">Location</string>
+    <string name="event_type">Event type</string>
 </resources>

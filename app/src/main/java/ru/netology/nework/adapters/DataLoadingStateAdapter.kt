@@ -8,9 +8,9 @@ import androidx.paging.LoadStateAdapter
 import androidx.recyclerview.widget.RecyclerView
 import ru.netology.nework.databinding.LoadStateBinding
 
-class PostLoadingStateAdapter(
+class DataLoadingStateAdapter(
     private val onInteractionListener: OnInteractionListener,
-) : LoadStateAdapter<PostLoadingStateAdapter.PostLoadingViewHolder>() {
+) : LoadStateAdapter<DataLoadingStateAdapter.PostLoadingViewHolder>() {
 
     interface OnInteractionListener {
         fun onRetry() {}

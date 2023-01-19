@@ -7,25 +7,26 @@ import ru.netology.nework.errors.ApiError
 import ru.netology.nework.errors.AppError
 import ru.netology.nework.errors.NetworkError
 import ru.netology.nework.errors.UnknownError
-import ru.netology.nework.models.*
-import ru.netology.nework.models.post.Post
-import ru.netology.nework.models.post.PostCreateRequest
-import ru.netology.nework.models.user.User
+import ru.netology.nework.models.Attachment
+import ru.netology.nework.models.AttachmentType
+import ru.netology.nework.models.Media
+import ru.netology.nework.models.MediaUpload
+import ru.netology.nework.models.event.Event
+import ru.netology.nework.models.event.EventCreateRequest
 import java.io.IOException
 import javax.inject.Inject
 
-class PostRepositoryImpl @Inject constructor(
+class EventsRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
-) : PostRepository {
-
-    override suspend fun likeById(id: Long, likedByMe: Boolean): Post {
+): EventsRepository {
+    override suspend fun likeEventById(id: Long, likedByMe: Boolean): Event {
         if (likedByMe) {
             return disLikeById(id)
 
         }
 
         try {
-            val response = apiService.likeById(id)
+            val response = apiService.likeEventById(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
@@ -37,9 +38,9 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun disLikeById(id: Long): Post {
+    private suspend fun disLikeById(id: Long): Event {
         try {
-            val response = apiService.dislikeById(id)
+            val response = apiService.dislikeEventById(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
@@ -51,9 +52,9 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun save(post: PostCreateRequest) {
+    override suspend fun saveEvent(event: EventCreateRequest) {
         try {
-            val response = apiService.save(post)
+            val response = apiService.saveEvent(event)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
@@ -68,13 +69,13 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveWithAttachment(post: PostCreateRequest, upload: MediaUpload) {
+    override suspend fun saveWithAttachment(event: EventCreateRequest, upload: MediaUpload) {
         try {
             val media = upload(upload)
             // TODO: add support for other types
-            val postWithAttachment =
-                post.copy(attachment = Attachment(media.url, AttachmentType.IMAGE))
-            save(postWithAttachment)
+            val eventWithAttachment =
+                event.copy(attachment = Attachment(media.url, AttachmentType.IMAGE))
+            saveEvent(eventWithAttachment)
         } catch (e: AppError) {
             throw e
         } catch (e: ApiError) {
@@ -105,9 +106,9 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun removeById(id: Long) {
+    override suspend fun removeEventById(id: Long) {
         try {
-            val response = apiService.removeById(id)
+            val response = apiService.removeEventById(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
             }
@@ -118,5 +119,4 @@ class PostRepositoryImpl @Inject constructor(
             throw UnknownError
         }
     }
-
 }

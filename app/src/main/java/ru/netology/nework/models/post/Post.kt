@@ -2,6 +2,7 @@ package ru.netology.nework.models.post
 
 import ru.netology.nework.models.Attachment
 import ru.netology.nework.models.Coordinates
+import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.user.UserPreview
 
 data class Post (

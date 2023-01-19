@@ -19,12 +19,13 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.netology.nework.R
 import ru.netology.nework.adapters.OnInteractionListener
-import ru.netology.nework.adapters.PostLoadingStateAdapter
+import ru.netology.nework.adapters.DataLoadingStateAdapter
 import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.Coordinates
+import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.models.user.UserPreview
@@ -46,13 +47,14 @@ class PostsFragment : Fragment() {
         val binding = FragmentPostsBinding.inflate(inflater)
 
         adapter = PostsAdapter(object : OnInteractionListener {
-            override fun onEdit(post: PostListItem) {
+            override fun onEdit(post: DataItem) {
                 //viewModel.edit(PostCreated(post.id, post.content, post.coords, post.link, post.attachment, post.mentionIds))
-                val direction = FeedFragmentDirections.actionFeedFragmentToNewPostFragment(post)
+                val direction =
+                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = post as PostListItem)
                 findNavController().navigate(direction)
             }
 
-            override fun onLike(post: PostListItem) {
+            override fun onLike(post: DataItem) {
                 if (!viewModel.authorized)
                     showAuthorizationQuestionDialog()
                 else {
@@ -60,12 +62,12 @@ class PostsFragment : Fragment() {
                 }
             }
 
-            override fun onLikeLongClick(view: View, post: PostListItem) {
+            override fun onLikeLongClick(view: View, post: DataItem) {
                 //Toast.makeText(requireContext(), userIds.toString(), Toast.LENGTH_LONG).show()
                 showUsersPopupMenu(view, post.likeOwnerIds, post.users)
             }
 
-            override fun onRemove(post: PostListItem) {
+            override fun onRemove(post: DataItem) {
                 viewModel.removeById(post.id)
             }
 
@@ -75,14 +77,14 @@ class PostsFragment : Fragment() {
         })
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
-            header = PostLoadingStateAdapter(object :
-                PostLoadingStateAdapter.OnInteractionListener {
+            header = DataLoadingStateAdapter(object :
+                DataLoadingStateAdapter.OnInteractionListener {
                 override fun onRetry() {
                     adapter.retry()
                 }
             }),
-            footer = PostLoadingStateAdapter(object :
-                PostLoadingStateAdapter.OnInteractionListener {
+            footer = DataLoadingStateAdapter(object :
+                DataLoadingStateAdapter.OnInteractionListener {
                 override fun onRetry() {
                     adapter.retry()
                 }
@@ -145,21 +147,31 @@ class PostsFragment : Fragment() {
 
 
         binding.fabPostAdd.setOnClickListener {
-            if (!viewModel.authorized)
+            if (!viewModel.authorized) {
                 showAuthorizationQuestionDialog()
-            else
-                findNavController().navigate(R.id.action_feedFragment_to_newPostFragment)
+            } else {
+                //findNavController().navigate(R.id.action_feedFragment_to_newPostFragment)
+                val direction = FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewPost = true)
+                findNavController().navigate(direction)
+            }
         }
 
         return binding.root
     }
 
     private fun showMap(coordinates: Coordinates) {
-        val direction = FeedFragmentDirections.actionFeedFragmentToMapFragment(coordinates = coordinates, readOnly = true)
+        val direction = FeedFragmentDirections.actionFeedFragmentToMapFragment(
+            coordinates = coordinates,
+            readOnly = true
+        )
         findNavController().navigate(direction)
     }
 
-    private fun showUsersPopupMenu(view: View, usersList: List<Long>, users: Map<Long, UserPreview>) {
+    private fun showUsersPopupMenu(
+        view: View,
+        usersList: List<Long>,
+        users: Map<Long, UserPreview>
+    ) {
         val popupMenu = PopupMenu(view.context, view)
         usersList.forEach { userId ->
             popupMenu.menu.add(

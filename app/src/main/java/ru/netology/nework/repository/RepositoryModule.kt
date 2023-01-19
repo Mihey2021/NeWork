@@ -17,4 +17,13 @@ interface RepositoryModule {
     @Singleton
     @Binds
     fun bindsAuthAndRegisterRepository(imp: AuthAndRegisterRepositoryImpl) : AuthAndRegisterRepository
+
+    @Singleton
+    @Binds
+    fun bindsEventsRepository(impl: EventsRepositoryImpl) : EventsRepository
+
+    @Singleton
+    @Binds
+    fun bindsCommonRepository(impl: CommonRepositoryImpl) : CommonRepository
+
 }

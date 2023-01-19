@@ -53,4 +53,5 @@
     <string name="check_geo_permission">Проверьте разрешение на доступ к геолокации</string>
     <string name="set_location">Установить место</string>
     <string name="location">Местоположение</string>
+    <string name="event_type">Тип события</string>
 </resources>

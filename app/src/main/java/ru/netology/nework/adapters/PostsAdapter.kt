@@ -13,79 +13,93 @@ import com.bumptech.glide.Glide
 import ru.netology.nework.R
 import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.models.*
-import ru.netology.nework.models.post.PostListItem
+import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.view.loadCircleCrop
 import ru.netology.nework.view.loadFromResource
 import java.text.SimpleDateFormat
 import java.util.*
 
 interface OnInteractionListener {
-    fun onLike(post: PostListItem) {}
-    fun onLikeLongClick(view: View, post: PostListItem) {}
-    fun onEdit(post: PostListItem) {}
-    fun onRemove(post: PostListItem) {}
-    fun onMention(post: PostListItem) {}
+    fun onLike(post: DataItem) {}
+    fun onLikeLongClick(view: View, post: DataItem) {}
+    fun onEdit(post: DataItem) {}
+    fun onRemove(post: DataItem) {}
+    fun onMention(post: DataItem) {}
     fun onPhotoView(photoUrl: String) {}
     fun onCoordinatesClick(coordinates: Coordinates) {}
 }
 
 class PostsAdapter(
     private val onInteractionListener: OnInteractionListener,
-) : PagingDataAdapter<PostListItem, PostViewHolder>(PostDiffCallback()) {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
+) : PagingDataAdapter<ru.netology.nework.models.post.PostListItem, ViewHolder>(PostDiffCallback()) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = PostCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return PostViewHolder(binding, onInteractionListener)
+        return ViewHolder(binding, onInteractionListener)
     }
 
-    override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val post = getItem(position) ?: return
         holder.bind(post)
     }
 }
 
-class PostViewHolder(
+class EventsAdapter(
+    private val onInteractionListener: OnInteractionListener,
+) : PagingDataAdapter<EventListItem, ViewHolder>(EventDiffCallback()) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = PostCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolder(binding, onInteractionListener)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val event = getItem(position) ?: return
+        holder.bind(event)
+    }
+}
+
+class ViewHolder(
     private val binding: PostCardBinding,
     private val onInteractionListener: OnInteractionListener,
 ) : RecyclerView.ViewHolder(binding.root) {
 
-    fun bind(post: PostListItem) {
+    fun <T: DataItem> bind(dataItem: T){
         binding.apply {
-            author.text = post.author
-            published.text = getFormattedDate(post.published)
-            content.text = post.content
-            if (post.authorAvatar != null) avatar.loadCircleCrop(post.authorAvatar!!) else avatar.loadFromResource(
+            author.text = dataItem.author
+            published.text = getFormattedDate(dataItem.published)
+            content.text = dataItem.content
+            if (dataItem.authorAvatar != null) avatar.loadCircleCrop(dataItem.authorAvatar!!) else avatar.loadFromResource(
                 R.drawable.ic_baseline_account_circle_24
             )
-            if (post.coords != null) {
-                coordinates.text = post.coords.toString()
+            if (dataItem.coords != null) {
+                coordinates.text = dataItem.coords.toString()
                 coordinates.setOnClickListener {
-                    onInteractionListener.onCoordinatesClick(post.coords!!)
+                    onInteractionListener.onCoordinatesClick(dataItem.coords!!)
                 }
                 coordinates.visibility = View.VISIBLE
             } else {
                 coordinates.visibility = View.GONE
             }
-            link.text = post.link
-            like.isChecked = post.likedByMe
-            like.text = "${post.likeOwnerIds.size}"
-            mention.isChecked = post.mentionedMe
-            mention.text = "${post.mentionIds.size}"
+            link.text = dataItem.link
+            like.isChecked = dataItem.likedByMe
+            like.text = "${dataItem.likeOwnerIds.size}"
+            mention.isChecked = dataItem.mentionedMe
+            mention.text = "${dataItem.mentionIds.size}"
 
-            menu.isVisible = post.ownedByMe
+            menu.isVisible = dataItem.ownedByMe
 
-            val attachment = post.attachment
+            val attachment = dataItem.attachment
             if (attachment != null && attachment.type == AttachmentType.IMAGE) {
                 attachmentImageView.visibility = View.VISIBLE
 
                 Glide.with(attachmentImageView)
-                    .load(post.attachment?.url)
+                    .load(dataItem.attachment?.url)
                     .placeholder(R.drawable.ic_baseline_loading_24)
                     .error(R.drawable.ic_baseline_non_loaded_image_24)
                     .timeout(10_000)
                     .into(attachmentImageView)
 
                 attachmentImageView.setOnClickListener {
-                    onInteractionListener.onPhotoView(post.attachment?.url ?: "")
+                    onInteractionListener.onPhotoView(dataItem.attachment?.url ?: "")
                 }
             } else {
                 attachmentImageView.visibility = View.GONE
@@ -97,11 +111,11 @@ class PostViewHolder(
                     setOnMenuItemClickListener { item ->
                         when (item.itemId) {
                             R.id.remove -> {
-                                onInteractionListener.onRemove(post)
+                                onInteractionListener.onRemove(dataItem)
                                 true
                             }
                             R.id.edit -> {
-                                onInteractionListener.onEdit(post)
+                                onInteractionListener.onEdit(dataItem)
                                 true
                             }
 
@@ -112,17 +126,17 @@ class PostViewHolder(
             }
 
             like.setOnClickListener {
-                onInteractionListener.onLike(post)
+                onInteractionListener.onLike(dataItem)
             }
 
             like.setOnLongClickListener {
-                onInteractionListener.onLikeLongClick(like, post)
+                onInteractionListener.onLikeLongClick(like, dataItem)
 //                showUsersPopupMenu(like, post.likeOwnerIds, post.users)
                 return@setOnLongClickListener true
             }
 
             mention.setOnClickListener {
-                onInteractionListener.onMention(post)
+                onInteractionListener.onMention(dataItem)
             }
         }
     }
@@ -142,15 +156,28 @@ class PostViewHolder(
     }
 }
 
-class PostDiffCallback : DiffUtil.ItemCallback<PostListItem>() {
-    override fun areItemsTheSame(oldItem: PostListItem, newItem: PostListItem): Boolean {
+class PostDiffCallback : DiffUtil.ItemCallback<ru.netology.nework.models.post.PostListItem>() {
+    override fun areItemsTheSame(oldItem: ru.netology.nework.models.post.PostListItem, newItem: ru.netology.nework.models.post.PostListItem): Boolean {
         return oldItem.id == newItem.id
     }
 
-    override fun areContentsTheSame(oldItem: PostListItem, newItem: PostListItem): Boolean {
+    override fun areContentsTheSame(oldItem: ru.netology.nework.models.post.PostListItem, newItem: ru.netology.nework.models.post.PostListItem): Boolean {
         return oldItem == newItem
     }
 
     //не применять анимацию (убрать "мерцание")
-    override fun getChangePayload(oldItem: PostListItem, newItem: PostListItem): Any = Unit
+    override fun getChangePayload(oldItem: ru.netology.nework.models.post.PostListItem, newItem: ru.netology.nework.models.post.PostListItem): Any = Unit
+}
+
+class EventDiffCallback : DiffUtil.ItemCallback<EventListItem>() {
+    override fun areItemsTheSame(oldItem: EventListItem, newItem: EventListItem): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: EventListItem, newItem: EventListItem): Boolean {
+        return oldItem == newItem
+    }
+
+    //не применять анимацию (убрать "мерцание")
+    override fun getChangePayload(oldItem: EventListItem, newItem: EventListItem): Any = Unit
 }
