@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.*
-import android.widget.ArrayAdapter
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -34,14 +33,16 @@ import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.event.EventType
 import ru.netology.nework.models.post.PostCreateRequest
 import ru.netology.nework.models.post.PostListItem
+import ru.netology.nework.models.user.User
+import ru.netology.nework.models.user.UserDataModel
 import ru.netology.nework.utils.AndroidUtils
+import ru.netology.nework.utils.getSerializable
 import ru.netology.nework.viewmodels.EventViewModel
 import ru.netology.nework.viewmodels.PostViewModel
-import java.io.Serializable
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
+import kotlin.collections.ArrayList
 
 @AndroidEntryPoint
 class NewPostFragment : Fragment(R.layout.fragment_new_post) {
@@ -58,6 +59,8 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     private var data: DataItem? = null
 
     private var coordinates: Coordinates? = null
+
+    private var mentionIds: List<Long> = emptyList()
 
     private val args: NewPostFragmentArgs by navArgs()
     private var isNewPost: Boolean = false
@@ -83,6 +86,11 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         data = args.editingData
         isNewPost = args.isNewPost
         isNewEvent = args.isNewEvent
+
+        if(data != null) {
+            coordinates = data!!.coords
+            mentionIds = data!!.mentionIds
+        }
 
         if(data is EventListItem) selectedEventType = data!!.type
 //        if(data is PostListItem) {
@@ -167,7 +175,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
         }
 
-        binding.coordinates.setOnClickListener {
+        binding.coordinatesText.setOnClickListener {
             openMapFragment()
         }
 
@@ -246,28 +254,45 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         ) { _, resultData ->
             coordinates =
                 getSerializable(resultData, MapFragment.EXTRA_COORDINATES, Coordinates::class.java)
-            if (data != null) {
-                data = if (data is PostListItem)
-                    (data as PostListItem).copy(post = (data as PostListItem).post.copy(coords = coordinates))
-                else
-                    (data as EventListItem).copy(event = (data as EventListItem).event.copy(coords = coordinates))
-            }
+//            if (data != null) {
+//                data = if (data is PostListItem)
+//                    (data as PostListItem).copy(post = (data as PostListItem).post.copy(coords = coordinates))
+//                else
+//                    (data as EventListItem).copy(event = (data as EventListItem).event.copy(coords = coordinates))
+//            }
             updateCoordinatesText(coordinates)
+        }
+
+        parentFragmentManager.setFragmentResultListener(
+            UserListFragment.REQUEST_CODE,
+            viewLifecycleOwner
+        ) { _, resultData ->
+            val checkedUsers = getSerializable(resultData, UserListFragment.EXTRA_SELECTED_USERS_IDS, UserDataModel::class.java)
+                //resultData.getParcelableArrayList(UserListFragment.EXTRA_SELECTED_USERS_IDS, User::class.java) as ArrayList<User>
+
+            mentionIds = checkedUsers.users.keys.toList()
+            updateMentionUsersText(checkedUsers)
         }
 
         return binding.root
     }
 
-    private fun <T : Serializable?> getSerializable(
-        data: Bundle,
-        name: String,
-        clazz: Class<T>
-    ): T {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            data.getSerializable(name, clazz)!!
-        else
-            data.getSerializable(name) as T
+    private fun updateMentionUsersText(checkedUsers: UserDataModel) {
+        var usersNames = ""
+        fragmentBinding.mentionUsersText.setText(checkedUsers.users.values.toString())
     }
+
+
+//    private fun <T : Serializable?> getSerializable(
+//        data: Bundle,
+//        name: String,
+//        clazz: Class<T>
+//    ): T {
+//        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+//            data.getSerializable(name, clazz)!!
+//        else
+//            data.getSerializable(name) as T
+//    }
 
     @SuppressLint("SimpleDateFormat")
     private fun saveInEventViewModel(viewModel: EventViewModel, content: String, link: String?) {
@@ -285,7 +310,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             ) else EventCreateRequest(
                 id = data!!.id,
                 content = content,
-                coords = data!!.coords,
+                coords = coordinates,
                 type = selectedEventType,
                 link = link,
                 attachment = data!!.attachment,
@@ -305,13 +330,14 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 id = 0,
                 content = content,
                 coords = coordinates,
+                mentionIds = mentionIds,
             ) else PostCreateRequest(
                 id = data!!.id,
                 content = content,
-                coords = data!!.coords,
+                coords = coordinates,
                 link = link,
                 attachment = data!!.attachment,
-                mentionIds = data!!.mentionIds
+                mentionIds = mentionIds,
             )
         )
 
@@ -321,17 +347,19 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun updateCoordinatesText(coordinates: Coordinates?) {
-        if (data != null) {
-            fragmentBinding.coordinates.text =
-                if (data?.coords == null) getString(R.string.set_location) else data!!.coords.toString()
-        } else
-            fragmentBinding.coordinates.text =
-                coordinates?.toString() ?: getString(R.string.set_location)
+//        if (data != null) {
+            fragmentBinding.coordinatesText.setText(
+                coordinates?.toString() ?: ""
+            )
+//        } else
+//            fragmentBinding.coordinatesText.setText(
+//                coordinates?.toString()
+//            )
     }
 
     private fun openMapFragment() {
         val direction =
-            NewPostFragmentDirections.actionNewPostFragmentToMapFragment(coordinates = data?.coords)
+            NewPostFragmentDirections.actionNewPostFragmentToMapFragment(coordinates = coordinates)
         findNavController().navigate(direction)
     }
 
@@ -358,11 +386,11 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             with(fragmentBinding) {
                 eventTypeLayout.visibility = View.GONE
                 mentionUsersLayout.visibility = View.VISIBLE
-                mentionUsersText.setOnClickListener {
-                    findNavController().navigate(R.id.action_newPostFragment_to_userListFragment)
-                }
-                mentionUsersLayout.setOnClickListener {
-                    findNavController().navigate(R.id.action_newPostFragment_to_userListFragment)
+
+                mentionUsersLayout.setEndIconOnClickListener {
+                    val direction =
+                        NewPostFragmentDirections.actionNewPostFragmentToUserListFragment(selectedUsersIds = (data?.mentionIds?.toLongArray() ?: mentionIds.toLongArray()))
+                    findNavController().navigate(direction)
                 }
 
             }

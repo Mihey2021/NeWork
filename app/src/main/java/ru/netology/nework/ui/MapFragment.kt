@@ -105,7 +105,6 @@ class MapFragment : Fragment(R.layout.fragment_map), InputListener {
                         }
                         else -> false
                     }
-
             }, viewLifecycleOwner)
         }
         return binding.root

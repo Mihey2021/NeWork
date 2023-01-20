@@ -6,12 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.netology.nework.R
 import ru.netology.nework.databinding.EventTypeItemBinding
 import ru.netology.nework.databinding.UserItemBinding
-import ru.netology.nework.models.event.Event
 import ru.netology.nework.models.event.EventType
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
@@ -45,7 +43,11 @@ class ArrayWithImageAdapter<T>(
             with(binding) {
                 val dataItem = item as User
                 userName.text = dataItem.name
-                if (item.avatar != null)
+                checkBox.isChecked = dataItem.isChecked
+                checkBox.setOnClickListener {
+                    dataItem.isChecked = !dataItem.isChecked
+                }
+                if (dataItem.avatar != null)
                     avatar.loadCircleCrop(dataItem.avatar!!)
                 else
                     avatar.loadFromResource(R.drawable.ic_baseline_account_circle_24)

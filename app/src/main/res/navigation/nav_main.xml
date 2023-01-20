@@ -75,5 +75,9 @@
         android:id="@+id/userListFragment"
         android:name="ru.netology.nework.ui.UserListFragment"
         android:label="fragment_user_list"
-        tools:layout="@layout/fragment_user_list" />
+        tools:layout="@layout/fragment_user_list" >
+        <argument
+            android:name="selectedUsersIds"
+            app:argType="long[]" />
+    </fragment>
 </navigation>
