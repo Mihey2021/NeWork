@@ -29,8 +29,6 @@ import ru.netology.nework.databinding.FragmentMapBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.Coordinates
-import ru.netology.nework.utils.MenuState
-import ru.netology.nework.utils.MenuStates
 import ru.netology.nework.utils.extensions.setIcon
 import javax.inject.Inject
 
@@ -185,6 +183,7 @@ class MapFragment : Fragment(R.layout.fragment_map), InputListener {
 
     override fun onMapLongTap(map: Map, selectcoordinates: Point) {
         if (readOnly) return
+        clearMarkers()
         val latitude = selectcoordinates.latitude.toString().substring(0, 9)
         val longitude = selectcoordinates.longitude.toString().substring(0, 9)
         coordinates = Coordinates(latitude, longitude)

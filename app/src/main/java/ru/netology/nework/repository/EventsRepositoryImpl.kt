@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 class EventsRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
-): EventsRepository {
+) : EventsRepository {
     override suspend fun likeEventById(id: Long, likedByMe: Boolean): Event {
         if (likedByMe) {
             return disLikeById(id)
@@ -28,7 +28,10 @@ class EventsRepositoryImpl @Inject constructor(
         try {
             val response = apiService.likeEventById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
             return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
@@ -42,7 +45,10 @@ class EventsRepositoryImpl @Inject constructor(
         try {
             val response = apiService.dislikeEventById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
             return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
@@ -52,14 +58,17 @@ class EventsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveEvent(event: EventCreateRequest) {
+    override suspend fun saveEvent(event: EventCreateRequest): Event {
         try {
             val response = apiService.saveEvent(event)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
 
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: ApiError) {
             throw e
         } catch (e: IOException) {
@@ -69,13 +78,12 @@ class EventsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveWithAttachment(event: EventCreateRequest, upload: MediaUpload) {
+    override suspend fun saveWithAttachment(event: EventCreateRequest, upload: MediaUpload): Event {
         try {
             val media = upload(upload)
-            // TODO: add support for other types
             val eventWithAttachment =
                 event.copy(attachment = Attachment(media.url, AttachmentType.IMAGE))
-            saveEvent(eventWithAttachment)
+            return saveEvent(eventWithAttachment)
         } catch (e: AppError) {
             throw e
         } catch (e: ApiError) {
@@ -95,7 +103,10 @@ class EventsRepositoryImpl @Inject constructor(
 
             val response = apiService.upload(media)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
 
             return response.body() ?: throw ApiError(response.code(), response.message())
@@ -110,9 +121,49 @@ class EventsRepositoryImpl @Inject constructor(
         try {
             val response = apiService.removeEventById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
             if (response.code() != 200) ApiError(response.code(), response.message())
+        } catch (e: IOException) {
+            throw NetworkError
+        } catch (e: Exception) {
+            throw UnknownError
+        }
+    }
+
+    override suspend fun setParticipant(id: Long): Event {
+        try {
+            val response = apiService.setParticipant(id)
+            if (!response.isSuccessful) {
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
+            }
+            if (response.code() != 200) ApiError(response.code(), response.message())
+            return response.body() ?: throw ApiError(response.code(), response.message())
+        } catch (e: IOException) {
+            throw NetworkError
+        } catch (e: Exception) {
+            throw UnknownError
+        }
+    }
+
+    override suspend fun removeParticipant(id: Long): Event {
+        try {
+            val response = apiService.removeParticipant(id)
+            if (!response.isSuccessful) {
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
+            }
+            if (response.code() != 200) ApiError(response.code(), response.message())
+            return response.body() ?: throw ApiError(response.code(), response.message())
+
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {

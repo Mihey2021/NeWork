@@ -11,5 +11,5 @@ data class EventCreateRequest(
     val type: EventType? = null,
     val attachment: Attachment? = null,
     val link: String? = null,
-    val speakerIds: List<Long> = emptyList(),
+    val speakerIds: List<Long> = listOf(),
 )

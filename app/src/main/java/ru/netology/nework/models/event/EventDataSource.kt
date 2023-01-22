@@ -4,7 +4,6 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import retrofit2.HttpException
 import ru.netology.nework.api.ApiService
-import ru.netology.nework.models.post.Post
 import java.io.IOException
 import javax.inject.Inject
 

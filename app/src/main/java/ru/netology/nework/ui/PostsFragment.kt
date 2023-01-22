@@ -2,7 +2,6 @@ package ru.netology.nework.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
@@ -21,6 +20,7 @@ import ru.netology.nework.R
 import ru.netology.nework.adapters.OnInteractionListener
 import ru.netology.nework.adapters.DataLoadingStateAdapter
 import ru.netology.nework.adapters.PostsAdapter
+import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
@@ -28,43 +28,63 @@ import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.models.user.User
-import ru.netology.nework.models.user.UserPreview
+import ru.netology.nework.utils.AdditionalFunctions
+import ru.netology.nework.viewmodels.AuthViewModel
 import ru.netology.nework.viewmodels.PostViewModel
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class PostsFragment : Fragment() {
 
     private val viewModel: PostViewModel by activityViewModels()
+    private val authViewModel: AuthViewModel by activityViewModels()
 
     private var dialog: AlertDialog? = null
     private var authUser: User? = null
     private lateinit var adapter: PostsAdapter
+    private var filterBy: Long = 0L
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        val binding = FragmentPostsBinding.inflate(inflater)
+    @Inject
+    lateinit var appAuth: AppAuth
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         adapter = PostsAdapter(object : OnInteractionListener {
             override fun onEdit(post: DataItem) {
-                //viewModel.edit(PostCreated(post.id, post.content, post.coords, post.link, post.attachment, post.mentionIds))
                 val direction =
                     FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = post as PostListItem)
                 findNavController().navigate(direction)
             }
 
             override fun onLike(post: DataItem) {
-                if (!viewModel.authorized)
+                if (!authViewModel.authorized)
                     showAuthorizationQuestionDialog()
                 else {
                     viewModel.likeById(post.id, post.likedByMe)
                 }
             }
 
-            override fun onLikeLongClick(view: View, post: DataItem) {
-                //Toast.makeText(requireContext(), userIds.toString(), Toast.LENGTH_LONG).show()
-                showUsersPopupMenu(view, post.likeOwnerIds, post.users)
+            override fun onLikeLongClick(view: View, dataItem: DataItem) {
+                val popupMenu = AdditionalFunctions.prepareUsersPopupMenu(
+                    requireContext(),
+                    view,
+                    dataItem.likeOwnerIds,
+                    dataItem.users,
+                    authUser?.id ?: 0L
+                )
+                setListenersAndShowPopupMenu(popupMenu)
+            }
+
+            override fun onMentionClick(view: View, dataItem: DataItem) {
+                val popupMenu = AdditionalFunctions.prepareUsersPopupMenu(
+                    requireContext(),
+                    view,
+                    dataItem.mentionIds,
+                    dataItem.users,
+                    authUser?.id ?: 0L
+                )
+                setListenersAndShowPopupMenu(popupMenu)
             }
 
             override fun onRemove(post: DataItem) {
@@ -74,7 +94,19 @@ class PostsFragment : Fragment() {
             override fun onCoordinatesClick(coordinates: Coordinates) {
                 showMap(coordinates)
             }
+
+            override fun onAvatarClick(authorId: Long) {
+                viewModel.setFilterBy(authorId)
+            }
+
         })
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val binding = FragmentPostsBinding.inflate(inflater)
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
@@ -90,6 +122,11 @@ class PostsFragment : Fragment() {
                 }
             }),
         )
+
+        viewModel.filterBy.observe(viewLifecycleOwner) {
+            filterBy = it
+            setFabAddButtonVisibility(binding.fabPostAdd)
+        }
 
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
@@ -131,32 +168,43 @@ class PostsFragment : Fragment() {
             }
         }
 
-        viewModel.authData.observe(viewLifecycleOwner) {
-            if (it != null) viewModel.getUserById(it.id.toLong()) else setActionBarSubTitle()
+        authViewModel.authData.observe(viewLifecycleOwner) {
+            setFabAddButtonVisibility(binding.fabPostAdd)
             adapter.refresh()
-        }
-
-        viewModel.authUser.observe(viewLifecycleOwner) {
-            authUser = it
-            setActionBarSubTitle(it?.name)
         }
 
         binding.swiperefresh.setOnRefreshListener {
             adapter.refresh()
         }
 
-
         binding.fabPostAdd.setOnClickListener {
-            if (!viewModel.authorized) {
+            if (!authViewModel.authorized) {
                 showAuthorizationQuestionDialog()
             } else {
-                //findNavController().navigate(R.id.action_feedFragment_to_newPostFragment)
-                val direction = FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewPost = true)
+                val direction =
+                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewPost = true)
                 findNavController().navigate(direction)
             }
         }
 
         return binding.root
+    }
+
+    private fun setFabAddButtonVisibility(view: View) {
+        view.isVisible = isNotAnotherUserPage(filterBy)
+    }
+
+    private fun isNotAnotherUserPage(filterBy: Long): Boolean {
+        val authorizedUserId = appAuth.getAuthorizedUserId()
+        return (((filterBy == authorizedUserId) && (authorizedUserId != 0L)) || ((filterBy == 0L) && (authorizedUserId != 0L)))
+    }
+
+    private fun setListenersAndShowPopupMenu(popupMenu: PopupMenu) {
+        popupMenu.setOnMenuItemClickListener {
+            viewModel.setFilterBy(it.itemId.toLong())
+            true
+        }
+        popupMenu.show()
     }
 
     private fun showMap(coordinates: Coordinates) {
@@ -165,28 +213,6 @@ class PostsFragment : Fragment() {
             readOnly = true
         )
         findNavController().navigate(direction)
-    }
-
-    private fun showUsersPopupMenu(
-        view: View,
-        usersList: List<Long>,
-        users: Map<Long, UserPreview>
-    ) {
-        val popupMenu = PopupMenu(view.context, view)
-        usersList.forEach { userId ->
-            popupMenu.menu.add(
-                0,
-                userId.toInt(),
-                Menu.NONE,
-                if (authUser?.id == userId) getString(R.string.me_text) else users[userId]?.name
-                    ?: getString(R.string.undefined)
-            )
-        }
-
-        popupMenu.setOnMenuItemClickListener {
-            return@setOnMenuItemClickListener true
-        }
-        popupMenu.show()
     }
 
     private fun showErrorDialog(message: String?) {
@@ -198,11 +224,6 @@ class PostsFragment : Fragment() {
             titleIcon = R.drawable.ic_baseline_error_24,
             isCancelable = true
         )
-    }
-
-    private fun setActionBarSubTitle(subTitle: String? = null) {
-        val actionBar = (activity as AppCompatActivity).supportActionBar
-        actionBar?.subtitle = subTitle ?: ""
     }
 
     private fun showAuthorizationQuestionDialog() {

@@ -12,17 +12,21 @@ interface RepositoryModule {
 
     @Singleton
     @Binds
-    fun bindsPostRepository(impl: PostRepositoryImpl) : PostRepository
+    fun bindsPostRepository(impl: PostRepositoryImpl): PostRepository
 
     @Singleton
     @Binds
-    fun bindsAuthAndRegisterRepository(imp: AuthAndRegisterRepositoryImpl) : AuthAndRegisterRepository
+    fun bindsAuthAndRegisterRepository(imp: AuthAndRegisterRepositoryImpl): AuthAndRegisterRepository
 
     @Singleton
     @Binds
-    fun bindsEventsRepository(impl: EventsRepositoryImpl) : EventsRepository
+    fun bindsEventsRepository(impl: EventsRepositoryImpl): EventsRepository
 
     @Singleton
     @Binds
-    fun bindsCommonRepository(impl: CommonRepositoryImpl) : CommonRepository
+    fun bindsCommonRepository(impl: CommonRepositoryImpl): CommonRepository
+
+    @Singleton
+    @Binds
+    fun bindsJobsRepository(impl: JobsRepositoryImp): JobsRepository
 }

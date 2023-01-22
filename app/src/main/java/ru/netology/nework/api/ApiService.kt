@@ -7,6 +7,7 @@ import retrofit2.http.*
 import ru.netology.nework.models.*
 import ru.netology.nework.models.event.Event
 import ru.netology.nework.models.event.EventCreateRequest
+import ru.netology.nework.models.jobs.Job
 import ru.netology.nework.models.post.Post
 import ru.netology.nework.models.post.PostCreateRequest
 import ru.netology.nework.models.user.User
@@ -37,9 +38,7 @@ interface ApiService {
     ): Response<Token>
 
     @GET("posts")
-    suspend fun getAllPosts(): Response<List<Post>>//PostsResponse
-//    @GET("posts")
-//    fun getAllPosts(): PagingSource<Int, Post>//Response<List<Post>>
+    suspend fun getAllPosts(): Response<List<Post>>
 
     @GET("posts/{id}/newer")
     suspend fun getNewer(@Path("id") id: Long): Response<List<Post>>
@@ -92,10 +91,53 @@ interface ApiService {
     @POST("posts")
     suspend fun save(@Body post: PostCreateRequest): Response<Post>
 
+    @POST("events/{event_id}/participants")
+    suspend fun setParticipant(@Path("event_id") event_id: Long): Response<Event>
+
+    @DELETE("events/{event_id}/participants")
+    suspend fun removeParticipant(@Path("event_id") id: Long): Response<Event>
+
     @Multipart
     @POST("media")
     suspend fun upload(@Part media: MultipartBody.Part): Response<Media>
 
     @DELETE("posts/{id}")
     suspend fun removeById(@Path("id") id: Long): Response<Unit>
+
+    @GET("my/wall/{id}/newer/")
+    suspend fun getWallNewer(@Path("id") id: Long): Response<List<Post>>
+
+    @GET("my/wall/{id}/before/")
+    suspend fun getWallBefore(@Path("id") id: Long, @Query("count") count: Int): Response<List<Post>>
+
+    @GET("my/wall/{id}/after")
+    suspend fun getWallAfter(@Path("id") id: Long, @Query("count") count: Int): Response<List<Post>>
+
+    @GET("my/wall/latest")
+    suspend fun getWallLatest(@Query("count") count: Int): Response<List<Post>>
+
+    @GET("{author_id}/wall/{id}/newer/")
+    suspend fun getUserWallNewer(@Path("author_id") userId: Long, @Path("id") id: Long): Response<List<Post>>
+
+    @GET("{author_id}/wall/{id}/before/")
+    suspend fun getUserWallBefore(@Path("author_id") userId: Long, @Path("id") id: Long, @Query("count") count: Int): Response<List<Post>>
+
+    @GET("{author_id}/wall/{id}/after")
+    suspend fun getUserWallAfter(@Path("author_id") userId: Long, @Path("id") id: Long, @Query("count") count: Int): Response<List<Post>>
+
+    @GET("{author_id}/wall/latest")
+    suspend fun getUserWallLatest(@Path("author_id") userId: Long, @Query("count") count: Int): Response<List<Post>>
+
+    @GET("my/jobs/")
+    suspend fun getMyJobs(): Response<List<Job>>
+
+    @POST("my/jobs/")
+    suspend fun saveMyJob(@Body job: Job): Response<Job>
+
+    @DELETE("my/jobs/{id}")
+    suspend fun removeMyJobById(@Path("id") id: Long): Response<Unit>
+
+    @GET("{user_id}/jobs/")
+    suspend fun getUserJobs(@Path("user_id") id: Long): Response<List<Job>>
+
 }

@@ -9,5 +9,5 @@ data class PostCreateRequest(
     val coords: Coordinates? = null,
     val link: String? = null,
     val attachment: Attachment? = null,
-    val mentionIds: List<Long> = emptyList(),
+    val mentionIds: List<Long> = listOf(),
 )

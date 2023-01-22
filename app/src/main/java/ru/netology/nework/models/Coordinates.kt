@@ -5,6 +5,6 @@ data class Coordinates(
     val long: String = "",
 ): java.io.Serializable {
     override fun toString(): String {
-        return "${this.lat};${this.long}"
+        return "${this.lat}; ${this.long}"
     }
 }

@@ -27,6 +27,6 @@ data class EventListItem(
     override val link: String? get() = event.link
     override val ownedByMe: Boolean get() = event.ownedByMe
     override val users: Map<Long, UserPreview> get() = event.users
-    override val mentionIds: List<Long> get() = emptyList()
+    override val mentionIds: List<Long> get() = listOf()
     override val mentionedMe: Boolean get() = false
 }

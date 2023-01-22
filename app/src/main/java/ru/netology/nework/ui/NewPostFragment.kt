@@ -5,6 +5,7 @@ import android.app.Activity
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.view.*
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,7 +20,13 @@ import androidx.navigation.fragment.navArgs
 import com.bumptech.glide.Glide
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.github.dhaval2404.imagepicker.constant.ImageProvider
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.CompositeDateValidator
+import com.google.android.material.datepicker.DateValidatorPointForward
+import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.timepicker.MaterialTimePicker
+import com.google.android.material.timepicker.TimeFormat
 import dagger.hilt.android.AndroidEntryPoint
 import ru.netology.nework.R
 import ru.netology.nework.adapters.ArrayWithImageAdapter
@@ -33,16 +40,19 @@ import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.event.EventType
 import ru.netology.nework.models.post.PostCreateRequest
 import ru.netology.nework.models.post.PostListItem
-import ru.netology.nework.models.user.User
-import ru.netology.nework.models.user.UserDataModel
+import ru.netology.nework.models.user.UsersSelected
+import ru.netology.nework.utils.AdditionalFunctions
+import ru.netology.nework.utils.AdditionalFunctions.Companion.getCurrentDateTime
+import ru.netology.nework.utils.AdditionalFunctions.Companion.getFormattedDateTimeToString
+import ru.netology.nework.utils.AdditionalFunctions.Companion.setFieldRequiredHint
+import ru.netology.nework.utils.AdditionalFunctions.Companion.showErrorDialog
 import ru.netology.nework.utils.AndroidUtils
 import ru.netology.nework.utils.getSerializable
 import ru.netology.nework.viewmodels.EventViewModel
 import ru.netology.nework.viewmodels.PostViewModel
-import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
-import kotlin.collections.ArrayList
+
 
 @AndroidEntryPoint
 class NewPostFragment : Fragment(R.layout.fragment_new_post) {
@@ -55,12 +65,13 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private lateinit var fragmentBinding: FragmentNewPostBinding
 
-    //private var post: PostListItem? = null
     private var data: DataItem? = null
 
     private var coordinates: Coordinates? = null
 
-    private var mentionIds: List<Long> = emptyList()
+    private var mentionIds: List<Long> = listOf()
+    private var speakerIds: List<Long> = listOf()
+    private var participantsIds: List<Long> = listOf()
 
     private val args: NewPostFragmentArgs by navArgs()
     private var isNewPost: Boolean = false
@@ -82,36 +93,23 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         )
         fragmentBinding = binding
 
-        //post = args.editingPost
         data = args.editingData
         isNewPost = args.isNewPost
         isNewEvent = args.isNewEvent
 
-        if(data != null) {
+        if (data != null) {
             coordinates = data!!.coords
             mentionIds = data!!.mentionIds
+            speakerIds = data!!.speakerIds
+            participantsIds = data!!.participantsIds
         }
 
-        if(data is EventListItem) selectedEventType = data!!.type
-//        if(data is PostListItem) {
-//            data = data as PostListItem
-//            viewModel = postViewModel
-//        }
-//        if(data is EventListItem) {
-//            data = data as EventListItem
-//            viewModel = eventViewModel
-//        }
-
-
-//        if(isNewPost)
-//            viewModel = postViewModel
-//        else
-//            viewModel = eventViewModel
+        if (data is EventListItem) selectedEventType = data!!.type
 
         initUi(data)
 
         setActionBarTitle(data != null)
-        binding.edit.requestFocus()
+        binding.content.requestFocus()
 
         val pickPhotoLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -221,21 +219,23 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
                 when (menuItem.itemId) {
                     R.id.save -> {
-                        fragmentBinding.let {
-                            if (data is PostListItem || isNewPost) {
-                                saveInPostViewModel(
-                                    viewModel = postViewModel,
-                                    content = it.edit.text.toString(),
-                                    link = it.linkText.text.toString().trim().ifBlank { null }
-                                )
-                            } else {
-                                saveInEventViewModel(
-                                    viewModel = eventViewModel,
-                                    content = it.edit.text.toString(),
-                                    link = it.linkText.text.toString().trim().ifBlank { null }
-                                )
+                        if (validateForm()) {
+                            fragmentBinding.let {
+                                if (data is PostListItem || isNewPost) {
+                                    saveInPostViewModel(
+                                        viewModel = postViewModel,
+                                        content = it.content.text.toString(),
+                                        link = it.linkText.text.toString().trim().ifBlank { null }
+                                    )
+                                } else {
+                                    saveInEventViewModel(
+                                        viewModel = eventViewModel,
+                                        content = it.content.text.toString(),
+                                        link = it.linkText.text.toString().trim().ifBlank { null }
+                                    )
+                                }
+                                AndroidUtils.hideKeyboard(requireView())
                             }
-                            AndroidUtils.hideKeyboard(requireView())
                         }
                         true
                     }
@@ -254,12 +254,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         ) { _, resultData ->
             coordinates =
                 getSerializable(resultData, MapFragment.EXTRA_COORDINATES, Coordinates::class.java)
-//            if (data != null) {
-//                data = if (data is PostListItem)
-//                    (data as PostListItem).copy(post = (data as PostListItem).post.copy(coords = coordinates))
-//                else
-//                    (data as EventListItem).copy(event = (data as EventListItem).event.copy(coords = coordinates))
-//            }
+
             updateCoordinatesText(coordinates)
         }
 
@@ -267,94 +262,114 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             UserListFragment.REQUEST_CODE,
             viewLifecycleOwner
         ) { _, resultData ->
-            val checkedUsers = getSerializable(resultData, UserListFragment.EXTRA_SELECTED_USERS_IDS, UserDataModel::class.java)
-                //resultData.getParcelableArrayList(UserListFragment.EXTRA_SELECTED_USERS_IDS, User::class.java) as ArrayList<User>
+            val checkedUsers = getSerializable(
+                resultData,
+                UserListFragment.EXTRA_SELECTED_USERS_IDS,
+                UsersSelected::class.java
+            )
 
-            mentionIds = checkedUsers.users.keys.toList()
+
+            if (data is PostListItem) {
+                mentionIds = checkedUsers.users.keys.toList()
+            } else {
+                speakerIds = checkedUsers.users.keys.toList()
+            }
+
             updateMentionUsersText(checkedUsers)
         }
 
         return binding.root
     }
 
-    private fun updateMentionUsersText(checkedUsers: UserDataModel) {
-        var usersNames = ""
-        fragmentBinding.mentionUsersText.setText(checkedUsers.users.values.toString())
+    private fun validateForm(): Boolean {
+        var valid = !fragmentBinding.content.text.isNullOrBlank()
+
+        if (!valid) {
+            showErrorDialog(
+                requireContext(),
+                "${getString(R.string.error_in_form_data)}\n${getString(R.string.make_sure_required_fields_filled)}"
+            )
+        }
+
+        return valid
     }
 
+    private fun updateMentionUsersText(checkedUsers: UsersSelected) {
+        if (data is PostListItem) {
+            fragmentBinding.mentionUsersText.setText(getStringUserList(checkedUsers.users))
+        } else {
+            fragmentBinding.speakersText.setText(getStringUserList(checkedUsers.users))
 
-//    private fun <T : Serializable?> getSerializable(
-//        data: Bundle,
-//        name: String,
-//        clazz: Class<T>
-//    ): T {
-//        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-//            data.getSerializable(name, clazz)!!
-//        else
-//            data.getSerializable(name) as T
-//    }
+        }
+    }
 
+    private fun getStringUserList(checkedUsers: MutableMap<Long, String>) =
+        if (checkedUsers.isEmpty()) "" else checkedUsers.values.toString()
+
+    private fun getListUsersText(usersIds: List<Long>): String {
+        var usersNames = ""
+        if (data == null || usersIds.isEmpty()) return usersNames
+
+        val authorizedUserId = appAuth.getAuthorizedUserId()
+        usersIds.forEach { userId ->
+            usersNames += "${
+                if (authorizedUserId == userId)
+                    getString(R.string.me_text)
+                else
+                    (data!!.users[userId]?.name ?: "")
+            }, "
+        }
+        return "[${usersNames.substring(0, usersNames.length - 2)}]"
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("SimpleDateFormat")
     private fun saveInEventViewModel(viewModel: EventViewModel, content: String, link: String?) {
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'")
-        sdf.timeZone = TimeZone.getTimeZone("UTC")
-        val eventDate = sdf.format(Date())
+        val date = AdditionalFunctions.getFormattedStringDateTime(
+            fragmentBinding.eventDateText.text.toString(),
+            "dd.MM.yyyy",
+            "yyyy-MM-dd"
+        )
+        val time = "${fragmentBinding.eventTimeText.text.toString()}:01"
+        val eventDate = AdditionalFunctions.getFormattedStringDateTime(
+            stringDateTime = "$date $time",
+            pattern = "yyyy-MM-dd HH:mm:ss",
+            patternTo = "yyyy-MM-dd'T'HH:mm:ss.uuuuuu'Z'"
+        ).toString()
         viewModel.edit(
-            if (data == null) EventCreateRequest(
-                id = 0,
+            EventCreateRequest(
+                id = if (data == null) 0L else data!!.id,
                 content = content,
                 coords = coordinates,
                 type = selectedEventType,
                 link = link,
-                datetime = eventDate,
-            ) else EventCreateRequest(
-                id = data!!.id,
-                content = content,
-                coords = coordinates,
-                type = selectedEventType,
-                link = link,
-                attachment = data!!.attachment,
-                speakerIds = data!!.speakerIds,
+                attachment = if (data == null) null else data!!.attachment,
+                speakerIds = speakerIds,
                 datetime = eventDate,
             )
         )
-//        viewModel.changeContent(content)
-//        viewModel.changeLink(link)
-//        viewModel.changeEventType(selectedEventType)
+
         viewModel.save()
     }
 
     private fun saveInPostViewModel(viewModel: PostViewModel, content: String, link: String?) {
         viewModel.edit(
-            if (data == null) PostCreateRequest(
-                id = 0,
-                content = content,
-                coords = coordinates,
-                mentionIds = mentionIds,
-            ) else PostCreateRequest(
-                id = data!!.id,
+            PostCreateRequest(
+                id = if (data == null) 0L else data!!.id,
                 content = content,
                 coords = coordinates,
                 link = link,
-                attachment = data!!.attachment,
+                attachment = if (data == null) null else data!!.attachment,
                 mentionIds = mentionIds,
             )
         )
-
-//        viewModel.changeContent(content)
-//        viewModel.changeLink(link ?: "")
         viewModel.save()
     }
 
     private fun updateCoordinatesText(coordinates: Coordinates?) {
-//        if (data != null) {
-            fragmentBinding.coordinatesText.setText(
-                coordinates?.toString() ?: ""
-            )
-//        } else
-//            fragmentBinding.coordinatesText.setText(
-//                coordinates?.toString()
-//            )
+        fragmentBinding.coordinatesText.setText(
+            coordinates?.toString() ?: ""
+        )
     }
 
     private fun openMapFragment() {
@@ -364,8 +379,46 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun initUi(data: DataItem?) {
+        fragmentBinding.contentLayout.hint = setFieldRequiredHint(fragmentBinding.contentLayout)
         if (data is EventListItem || isNewEvent) {
             with(fragmentBinding) {
+                eventDateLayout.hint = setFieldRequiredHint(eventDateLayout)
+                eventTimeLayout.hint = setFieldRequiredHint(eventTimeLayout)
+                eventDateLayout.visibility = View.VISIBLE
+                eventTimeLayout.visibility = View.VISIBLE
+                eventDateText.setText(
+                    if (data == null || isNewEvent)
+                        getFormattedDateTimeToString(getCurrentDateTime())
+                    else
+                        AdditionalFunctions.getFormattedStringDateTime(
+                            stringDateTime = data.datetime,
+                            patternTo = "dd.MM.yyyy",
+                        )
+                )
+
+                eventTimeText.setText(
+                    if (data == null || isNewEvent)
+                        getFormattedDateTimeToString(getCurrentDateTime(), "HH:mm")
+                    else
+                        AdditionalFunctions.getFormattedStringDateTime(
+                            stringDateTime = data.datetime,
+                            patternTo = "HH:mm"
+                        )
+                )
+
+                if (data != null) {
+                    eventDateText.isEnabled = false
+                    eventTimeText.isEnabled = false
+                } else {
+                    eventDateLayout.setEndIconOnClickListener {
+                        showDatePicker()
+                    }
+                    eventTimeLayout.setEndIconOnClickListener {
+                        showTimePicker()
+                    }
+                }
+
+
                 eventTypeLayout.visibility = View.VISIBLE
                 val adapter = ArrayWithImageAdapter(
                     requireContext(),
@@ -380,19 +433,44 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 eventTypeTextView.setOnItemClickListener { _, _, position, _ ->
                     selectedEventType = EventType.values()[position]
                 }
+
+                speakersLayout.setEndIconOnClickListener {
+                    openUserListFragment(
+                        getString(R.string.select_speakers),
+                        speakerIds,
+                        filteredMe = false
+                    )
+                }
+                speakersText.setText(
+                    if (speakerIds.isEmpty()) getString(R.string.speakers) else getListUsersText(
+                        speakerIds
+                    )
+                )
+                speakersLayout.visibility = View.VISIBLE
+
+                participantsText.setText(
+                    getListUsersText(participantsIds)
+                )
+                participantsLayout.visibility =
+                    if (participantsIds.isEmpty()) View.GONE else View.VISIBLE
                 mentionUsersLayout.visibility = View.GONE
             }
         } else {
             with(fragmentBinding) {
+                eventDateLayout.visibility = View.GONE
+                eventTimeLayout.visibility = View.GONE
                 eventTypeLayout.visibility = View.GONE
+                mentionUsersText.setText(
+                    if (mentionIds.isEmpty()) getString(R.string.marked_users) else getListUsersText(
+                        mentionIds
+                    )
+                )
                 mentionUsersLayout.visibility = View.VISIBLE
-
                 mentionUsersLayout.setEndIconOnClickListener {
-                    val direction =
-                        NewPostFragmentDirections.actionNewPostFragmentToUserListFragment(selectedUsersIds = (data?.mentionIds?.toLongArray() ?: mentionIds.toLongArray()))
-                    findNavController().navigate(direction)
+                    openUserListFragment(getString(R.string.mark_users), mentionIds)
                 }
-
+                speakersLayout.visibility = View.GONE
+                participantsLayout.visibility = View.GONE
             }
 
         }
@@ -404,7 +482,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         val attachment = data.attachment
         updateCoordinatesText(data.coords)
         with(fragmentBinding) {
-            edit.setText(data.content)
+            content.setText(data.content)
             linkText.setText(data.link)
             when (attachment?.type) {
                 AttachmentType.IMAGE -> {
@@ -421,7 +499,84 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 }
             }
         }
+    }
 
+    private fun openUserListFragment(
+        title: String,
+        idsList: List<Long>,
+        filteredMe: Boolean = true
+    ) {
+        val direction =
+            NewPostFragmentDirections.actionNewPostFragmentToUserListFragment(
+                title = title,
+                selectedUsersIds = (idsList.toLongArray()),
+                filteredMe = filteredMe,
+            )
+        findNavController().navigate(direction)
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun showTimePicker() {
+        val isSystem24Hour = DateFormat.is24HourFormat(requireContext())
+        val clockFormat = if (isSystem24Hour) TimeFormat.CLOCK_24H else TimeFormat.CLOCK_12H
+
+        val dateTime = getCurrentDateTime()
+        val hour = AdditionalFunctions.getFormattedDateTimeToInt(dateTime, "HH")
+        val minute = AdditionalFunctions.getFormattedDateTimeToInt(dateTime, "mm")
+
+        val timePicker =
+            MaterialTimePicker.Builder()
+                .setTimeFormat(clockFormat)
+                .setHour(hour)
+                .setMinute(minute)
+                .setTitleText(getString(R.string.event_time))
+                .build()
+
+        timePicker.show(parentFragmentManager, "event_time")
+
+        timePicker.addOnPositiveButtonClickListener {
+            fragmentBinding.eventTimeText.setText(
+                getFormattedStringTime(
+                    timePicker.hour,
+                    timePicker.minute
+                )
+            )
+        }
+    }
+
+    private fun getFormattedStringTime(hour: Int, minute: Int, separator: String = ":"): String {
+        val strHour = if (hour < 10) "0$hour" else hour.toString()
+        val strMinute = if (minute < 10) "0$minute" else minute.toString()
+        return "${strHour}${separator}${strMinute}"
+    }
+
+    private fun showDatePicker() {
+        val constraintsBuilder = CalendarConstraints.Builder()
+        val today = MaterialDatePicker.todayInUtcMilliseconds()
+        val dateValidatorMin: CalendarConstraints.DateValidator =
+            DateValidatorPointForward.from(today)
+        val listValidators = ArrayList<CalendarConstraints.DateValidator>()
+        listValidators.add(dateValidatorMin)
+        val validators = CompositeDateValidator.allOf(listValidators)
+        constraintsBuilder.setValidator(validators)
+
+        val datePicker =
+            MaterialDatePicker.Builder.datePicker()
+                .setTitleText(getString(R.string.event_date))
+                .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                .setCalendarConstraints(constraintsBuilder.build())
+                .build()
+
+        datePicker.addOnPositiveButtonClickListener {
+            val date = Date(it)
+            fragmentBinding.eventDateText.setText(
+                AdditionalFunctions.getFormattedDateTimeToString(
+                    date,
+                    "dd.MM.yyyy"
+                )
+            )
+        }
+        datePicker.show(parentFragmentManager, "event_date")
     }
 
     private fun loadImage(imageView: ImageView, url: String) {
@@ -442,7 +597,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             if (editing) getString(R.string.edit_event) else getString(R.string.add_event)
 
         actionBar?.title = title
-
     }
 
     private fun showLogoutQuestionDialog() {
@@ -457,10 +611,5 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     findNavController().navigateUp()
                 }
             })
-    }
-
-    override fun onDestroyView() {
-        //fragmentBinding = null
-        super.onDestroyView()
     }
 }

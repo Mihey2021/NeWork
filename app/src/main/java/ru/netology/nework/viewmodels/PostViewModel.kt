@@ -5,9 +5,11 @@ import androidx.lifecycle.*
 import androidx.paging.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.auth.AppAuth
@@ -26,36 +28,37 @@ import javax.inject.Inject
 private val noPhoto = PhotoModel()
 const val PAGE_SIZE = 100
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PostViewModel @Inject constructor(
     private val repository: PostRepository,
-    private val commonRepository: CommonRepository,
     private val apiService: ApiService,
     private val appAuth: AppAuth,
 ) : ViewModel() {
 
-    val authorized: Boolean
-        get() = appAuth.authStateFlow.value?.token != null
-
-    val authData: LiveData<Token?> = appAuth.authStateFlow.asLiveData(Dispatchers.Default)
-
-    private val _authUser: MutableLiveData<User?> = MutableLiveData(null)
-    val authUser: LiveData<User?>
-        get() = _authUser
+    private val authData: LiveData<Token?> = appAuth.authStateFlow.asLiveData(Dispatchers.Default)
 
     val localDataFlow: Flow<PagingData<PostListItem>>
     private val localChanges = LocalChanges()
     private val localChangesFlow = MutableStateFlow(OnChange(localChanges))
 
+    private val _filterBy = MutableLiveData(0L)
+    val filterBy: LiveData<Long>
+        get() = _filterBy
+
     init {
-        val data: Flow<PagingData<Post>> = Pager(
-            config = PagingConfig(
-                pageSize = PAGE_SIZE,
-                initialLoadSize = PAGE_SIZE,
-                enablePlaceholders = false
-            ),
-            pagingSourceFactory = { PostDataSource(apiService) },
-        ).flow.cachedIn(viewModelScope)
+        val data: Flow<PagingData<Post>> = _filterBy.asFlow()
+            .flatMapLatest {
+                Pager(
+                    config = PagingConfig(
+                        pageSize = PAGE_SIZE,
+                        initialLoadSize = PAGE_SIZE,
+                        enablePlaceholders = false
+                    ),
+                    pagingSourceFactory = { PostDataSource(apiService, it, authData.value?.id) },
+                ).flow
+            }
+            .cachedIn(viewModelScope)
 
         localDataFlow = combine(data, localChangesFlow, this::merge)
     }
@@ -73,6 +76,11 @@ class PostViewModel @Inject constructor(
     private val _photo = MutableLiveData(noPhoto)
     val photo: LiveData<PhotoModel>
         get() = _photo
+
+    fun setFilterBy(userId: Long) {
+        if (this._filterBy.value == userId) return
+        this._filterBy.value = userId
+    }
 
     private fun merge(
         posts: PagingData<Post>,
@@ -116,18 +124,6 @@ class PostViewModel @Inject constructor(
         localChangesFlow.value = OnChange(localChanges)
     }
 
-    fun getUserById(id: Long) {
-        viewModelScope.launch {
-            try {
-                _dataState.value = FeedModelState(loading = true)
-                _authUser.value = commonRepository.getUserById(id)
-            } catch (e: Exception) {
-                _authUser.value = null
-                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
-            }
-        }
-    }
-
     fun changePhoto(uri: Uri?, file: File?) {
         _photo.value = PhotoModel(uri, file)
     }
@@ -136,33 +132,27 @@ class PostViewModel @Inject constructor(
         edited.value = post
     }
 
-    fun changeContent(content: String) {
-        val text = content.trim()
-        if (edited.value?.content == text) {
-            return
-        }
-        edited.value = edited.value?.copy(content = text)
-    }
-
-    fun changeLink(link: String) {
-        val link = link.trim().ifBlank { null }
-        edited.value = edited.value?.copy(link = link)
-    }
-
     fun save() {
         edited.value?.let {
             _postCreated.value = Unit
             viewModelScope.launch {
                 try {
                     when (_photo.value) {
-                        noPhoto -> repository.save(it)
+                        noPhoto -> {
+                            val changingPost = repository.save(it)
+                            makeChanges(changingPost)
+                        }
                         else -> _photo.value?.file?.let { file ->
-                            repository.saveWithAttachment(it, MediaUpload(file))
+                            val changingPost = repository.saveWithAttachment(it, MediaUpload(file))
+                            makeChanges(changingPost)
                         }
                     }
                     _dataState.value = FeedModelState(needRefresh = it.id == 0L)
                 } catch (e: Exception) {
-                    _dataState.value = FeedModelState(error = true, errorMessage = if (e.message?.isBlank() != false) e.stackTraceToString() else e.message)
+                    _dataState.value = FeedModelState(
+                        error = true,
+                        errorMessage = if (e.message?.isBlank() != false) e.stackTraceToString() else e.message
+                    )
                 }
             }
         }

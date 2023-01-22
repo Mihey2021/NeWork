@@ -28,19 +28,9 @@ private val noPhoto = PhotoModel()
 @HiltViewModel
 class EventViewModel @Inject constructor(
     private val repository: EventsRepository,
-    private val commonRepository: CommonRepository,
     private val apiService: ApiService,
     private val appAuth: AppAuth,
 ) : ViewModel() {
-
-    val authorized: Boolean
-        get() = appAuth.authStateFlow.value?.token != null
-
-    val authData: LiveData<Token?> = appAuth.authStateFlow.asLiveData(Dispatchers.Default)
-
-    private val _authUser: MutableLiveData<User?> = MutableLiveData(null)
-    val authUser: LiveData<User?>
-        get() = _authUser
 
     val localDataFlow: Flow<PagingData<EventListItem>>
     private val localChanges = LocalChangesEvent()
@@ -116,18 +106,6 @@ class EventViewModel @Inject constructor(
         localChangesFlow.value = OnChangeEvent(localChanges)
     }
 
-    fun getUserById(id: Long) {
-        viewModelScope.launch {
-            try {
-                _dataState.value = FeedModelState(loading = true)
-                _authUser.value = commonRepository.getUserById(id)
-            } catch (e: Exception) {
-                _authUser.value = null
-                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
-            }
-        }
-    }
-
     fun changePhoto(uri: Uri?, file: File?) {
         _photo.value = PhotoModel(uri, file)
     }
@@ -136,37 +114,27 @@ class EventViewModel @Inject constructor(
         edited.value = event
     }
 
-    fun changeContent(content: String) {
-        val text = content.trim()
-        if (edited.value?.content == text) {
-            return
-        }
-        edited.value = edited.value?.copy(content = text)
-    }
-
-    fun changeLink(link: String) {
-        val link = link.trim().ifBlank { null }
-        edited.value = edited.value?.copy(link = link)
-    }
-
-    fun changeEventType(eventType: EventType) {
-        edited.value = edited.value?.copy(type = eventType)
-    }
-
     fun save() {
         edited.value?.let {
             _eventCreated.value = Unit
             viewModelScope.launch {
                 try {
                     when (_photo.value) {
-                        noPhoto -> repository.saveEvent(it)
+                        noPhoto -> {
+                            val changingEvent = repository.saveEvent(it)
+                            makeChanges(changingEvent)
+                        }
                         else -> _photo.value?.file?.let { file ->
-                            repository.saveWithAttachment(it, MediaUpload(file))
+                            val changingEvent = repository.saveWithAttachment(it, MediaUpload(file))
+                            makeChanges(changingEvent)
                         }
                     }
                     _dataState.value = FeedModelState(needRefresh = it.id == 0L)
                 } catch (e: Exception) {
-                    _dataState.value = FeedModelState(error = true, errorMessage = if (e.message?.isBlank() != false) e.stackTraceToString() else e.message)
+                    _dataState.value = FeedModelState(
+                        error = true,
+                        errorMessage = if (e.message?.isBlank() != false) e.stackTraceToString() else e.message
+                    )
                 }
             }
         }
@@ -179,6 +147,30 @@ class EventViewModel @Inject constructor(
             try {
                 repository.removeEventById(id)
                 _dataState.value = FeedModelState(needRefresh = true)
+            } catch (e: Exception) {
+                _dataState.value = FeedModelState(error = true)
+            }
+        }
+    }
+
+    fun removeParticipant(eventId: Long) {
+        viewModelScope.launch {
+            try {
+                val changingEvent = repository.removeParticipant(eventId)
+                makeChanges(changingEvent)
+                _dataState.value = FeedModelState()
+            } catch (e: Exception) {
+                _dataState.value = FeedModelState(error = true)
+            }
+        }
+    }
+
+    fun setParticipant(eventId: Long) {
+        viewModelScope.launch {
+            try {
+                val changingEvent = repository.setParticipant(eventId)
+                makeChanges(changingEvent)
+                _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true)
             }

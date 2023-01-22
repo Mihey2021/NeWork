@@ -58,5 +58,26 @@
     <string name="user">User</string>
     <string name="add_event">Add an event</string>
     <string name="edit_event">Edit event</string>
-    <string name="mentioned_users">Mentioned users</string>
+    <string name="marked_users">Marked users</string>
+    <string name="you_have_been_marked">You have been marked</string>
+    <string name="mark_users">Mark users</string>
+    <string name="speakers">Speakers</string>
+    <string name="select_speakers">Select speakers</string>
+    <string name="participants">Participants</string>
+    <string name="event_date">Event date</string>
+    <string name="event_time">Event time</string>
+    <string name="select_participants">Select participants</string>
+    <string name="my_wall">My wall</string>
+    <string name="feed">Feed</string>
+    <string name="jobs">Jobs</string>
+    <string name="start_date">Start date</string>
+    <string name="end_date">End date</string>
+    <string name="position">Position</string>
+    <string name="name">Name</string>
+    <string name="job">Job</string>
+    <string name="err_dates_compare">Start date before end date</string>
+    <string name="error_in_form_data">Error in form data:</string>
+    <string name="make_sure_required_fields_filled">Make sure that all required fields are filled in</string>
+    <string name="required_field_tag">*</string>
+    <string name="content">Content</string>
 </resources>

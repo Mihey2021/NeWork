@@ -2,9 +2,8 @@ package ru.netology.nework.ui
 
 import android.os.Bundle
 import android.view.*
-import android.widget.AdapterView
 import androidx.appcompat.app.AlertDialog
-import androidx.collection.arrayMapOf
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
@@ -20,7 +19,7 @@ import ru.netology.nework.databinding.FragmentUserListBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.user.User
-import ru.netology.nework.models.user.UserDataModel
+import ru.netology.nework.models.user.UsersSelected
 import ru.netology.nework.viewmodels.CommonViewModel
 import javax.inject.Inject
 
@@ -49,7 +48,10 @@ class UserListFragment : Fragment(R.layout.fragment_user_list) {
 
         viewModel.getAllUsersList()
 
+        setActionBarTitle(args.title)
+
         val selectedUsersIds = args.selectedUsersIds.toMutableSet()
+        val filteredMe = args.filteredMe
 
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
@@ -59,30 +61,23 @@ class UserListFragment : Fragment(R.layout.fragment_user_list) {
         }
 
         viewModel.usersList.observe(viewLifecycleOwner) { usersList ->
+            val authorizedUserId = appAuth.getAuthorizedUserId()
+            usersArray = emptyArray()
             usersList.forEach { user ->
-                usersArray += user.copy(isChecked = selectedUsersIds.contains(user.id))
-
+                if (filteredMe) {
+                    if (user.id != appAuth.getAuthorizedUserId())
+                        usersArray += user.copy(isChecked = selectedUsersIds.contains(user.id))
+                } else {
+                    usersArray += user.copy(
+                        name = if (user.id == authorizedUserId) getString(R.string.me_text) else user.name,
+                        isChecked = selectedUsersIds.contains(user.id),
+                        itsMe = (user.id == authorizedUserId)
+                    )
+                }
             }
             adapter = ArrayWithImageAdapter(requireContext(), R.layout.user_item, usersArray)
             binding.userListView.adapter = adapter
         }
-
-        binding.userListView.onItemClickListener =
-            AdapterView.OnItemClickListener { _, _, position, _ ->
-//                val dataItem:  = usersArray!![position] as DataModel
-//                dataItem.checked = !dataItem.checked
-//                adapter.notifyDataSetChanged()
-                val dataItem = usersArray[position]
-                val userId = dataItem.id
-                val arrayDo = usersArray[position]
-                usersArray[position].isChecked = !usersArray[position].isChecked
-                val arrayPosle = usersArray[position]
-                adapter.notifyDataSetChanged()
-                if (selectedUsersIds.contains(userId))
-                    selectedUsersIds.remove(userId)
-                else
-                    selectedUsersIds.add(userId)
-            }
 
         requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -92,11 +87,12 @@ class UserListFragment : Fragment(R.layout.fragment_user_list) {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
                 when (menuItem.itemId) {
                     R.id.save -> {
-                        val selectedUsers = UserDataModel()
-                        usersArray.filter { user -> user.isChecked }.map{user -> selectedUsers.users.put(user.id, user.name)}
+                        val selectedUsers = UsersSelected()
+                        usersArray.filter { user -> user.isChecked }
+                            .map { user -> selectedUsers.users.put(user.id, user.name) }
                         parentFragmentManager.setFragmentResult(
                             REQUEST_CODE, bundleOf(
-                                EXTRA_SELECTED_USERS_IDS to selectedUsers//selectedUsersIds.toLongArray()
+                                EXTRA_SELECTED_USERS_IDS to selectedUsers
                             )
                         )
                         findNavController().navigateUp()
@@ -138,8 +134,13 @@ class UserListFragment : Fragment(R.layout.fragment_user_list) {
             })
     }
 
+    private fun setActionBarTitle(title: String?) {
+        val actionBar = (activity as AppCompatActivity).supportActionBar
+        actionBar?.title = title ?: getString(R.string.app_name)
+    }
+
     companion object {
-        const val REQUEST_CODE = "REQUEST_CODE"
+        const val REQUEST_CODE = "USERS_IDS_REQUEST_CODE"
         const val EXTRA_SELECTED_USERS_IDS = "EXTRA_SELECTED_USERS_IDS"
     }
 }

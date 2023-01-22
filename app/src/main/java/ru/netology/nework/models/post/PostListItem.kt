@@ -26,8 +26,8 @@ data class PostListItem(
     override val ownedByMe: Boolean get() = post.ownedByMe
     override val users: Map<Long, UserPreview> get() = post.users
     override val datetime: String get() = ""
-    override val speakerIds: List<Long> get() = emptyList()
-    override val participantsIds: List<Long> get() = emptyList()
+    override val speakerIds: List<Long> get() = listOf()
+    override val participantsIds: List<Long> get() = listOf()
     override val participatedByMe: Boolean get() = false
     override val type: EventType get() = EventType.OFFLINE
 }

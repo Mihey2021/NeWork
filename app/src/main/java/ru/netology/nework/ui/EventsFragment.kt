@@ -1,15 +1,14 @@
 package ru.netology.nework.ui
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -18,9 +17,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.netology.nework.R
+import ru.netology.nework.adapters.DataLoadingStateAdapter
 import ru.netology.nework.adapters.EventsAdapter
 import ru.netology.nework.adapters.OnInteractionListener
-import ru.netology.nework.adapters.DataLoadingStateAdapter
+import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentEventsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
@@ -28,16 +28,26 @@ import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.user.User
-import ru.netology.nework.models.user.UserPreview
+import ru.netology.nework.utils.AdditionalFunctions
+import ru.netology.nework.utils.AdditionalFunctions.Companion.showErrorDialog
+import ru.netology.nework.viewmodels.AuthViewModel
 import ru.netology.nework.viewmodels.EventViewModel
+import ru.netology.nework.viewmodels.PostViewModel
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class EventsFragment : Fragment(R.layout.fragment_events) {
 
     private val viewModel: EventViewModel by activityViewModels()
+    private val postViewModel: PostViewModel by activityViewModels()
+    private val authViewModel: AuthViewModel by activityViewModels()
+
+    @Inject
+    lateinit var appAuth: AppAuth
 
     private var dialog: AlertDialog? = null
     private var authUser: User? = null
+    private var filterBy: Long = 0L
     private lateinit var adapter: EventsAdapter
 
     override fun onCreateView(
@@ -49,12 +59,13 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
         adapter = EventsAdapter(object : OnInteractionListener {
             override fun onEdit(event: DataItem) {
-                val direction = FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = event as EventListItem)
+                val direction =
+                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = event as EventListItem)
                 findNavController().navigate(direction)
             }
 
             override fun onLike(event: DataItem) {
-                if (!viewModel.authorized)
+                if (!authViewModel.authorized)
                     showAuthorizationQuestionDialog()
                 else {
                     viewModel.likeById(event.id, event.likedByMe)
@@ -62,8 +73,47 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             }
 
             override fun onLikeLongClick(view: View, event: DataItem) {
-                //Toast.makeText(requireContext(), userIds.toString(), Toast.LENGTH_LONG).show()
-                showUsersPopupMenu(view, event.likeOwnerIds, event.users)
+                val popupMenu = AdditionalFunctions.prepareUsersPopupMenu(
+                    requireContext(),
+                    view,
+                    event.likeOwnerIds,
+                    event.users,
+                    authUser?.id ?: 0L
+                )
+                setListenersAndShowPopupMenu(popupMenu)
+            }
+
+            override fun onSpeakerClick(view: View, dataItem: DataItem) {
+                val popupMenu = AdditionalFunctions.prepareUsersPopupMenu(
+                    requireContext(),
+                    view,
+                    dataItem.speakerIds,
+                    dataItem.users,
+                    authUser?.id ?: 0L
+                )
+                setListenersAndShowPopupMenu(popupMenu)
+            }
+
+            override fun onParticipantsClick(eventId: Long, participatedByMe: Boolean) {
+                if (participatedByMe)
+                    viewModel.removeParticipant(eventId)
+                else
+                    viewModel.setParticipant(eventId)
+            }
+
+            override fun onParticipantsLongClick(view: View, dataItem: DataItem) {
+                if (!authViewModel.authorized)
+                    showAuthorizationQuestionDialog()
+                else {
+                    val popupMenu = AdditionalFunctions.prepareUsersPopupMenu(
+                        requireContext(),
+                        view,
+                        dataItem.participantsIds,
+                        dataItem.users,
+                        appAuth.getAuthorizedUserId()
+                    )
+                    setListenersAndShowPopupMenu(popupMenu)
+                }
             }
 
             override fun onRemove(event: DataItem) {
@@ -72,6 +122,10 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
             override fun onCoordinatesClick(coordinates: Coordinates) {
                 showMap(coordinates)
+            }
+
+            override fun onAvatarClick(authorId: Long) {
+                postViewModel.setFilterBy(authorId)
             }
         })
 
@@ -90,11 +144,24 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             }),
         )
 
+        postViewModel.filterBy.observe(viewLifecycleOwner) {
+            filterBy = it
+            setFabAddButtonVisibility(binding.fabEventAdd)
+        }
+
+        authViewModel.authData.observe(viewLifecycleOwner) {
+            setFabAddButtonVisibility(binding.fabEventAdd)
+            adapter.refresh()
+        }
+
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
             if (state.needRefresh) adapter.refresh()
             if (state.error) {
-                if (dialog?.isShowing == false || dialog == null) showErrorDialog(state.errorMessage)
+                if (dialog?.isShowing == false || dialog == null) showErrorDialog(
+                    requireContext(),
+                    state.errorMessage
+                )
             }
         }
 
@@ -115,6 +182,7 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                         binding.progress.isVisible = false
                         val extractedException = currentState.error
                         if (dialog?.isShowing == false || dialog == null) showErrorDialog(
+                            requireContext(),
                             extractedException.message
                         )
 
@@ -130,12 +198,12 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             }
         }
 
-        viewModel.authData.observe(viewLifecycleOwner) {
-            if (it != null) viewModel.getUserById(it.id.toLong()) else setActionBarSubTitle()
+        authViewModel.authData.observe(viewLifecycleOwner) {
+            if (it != null) authViewModel.getUserById(it.id) else setActionBarSubTitle()
             adapter.refresh()
         }
 
-        viewModel.authUser.observe(viewLifecycleOwner) {
+        authViewModel.authUser.observe(viewLifecycleOwner) {
             authUser = it
             setActionBarSubTitle(it?.name)
         }
@@ -146,12 +214,11 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
 
         binding.fabEventAdd.setOnClickListener {
-            if (!viewModel.authorized) {
+            if (!authViewModel.authorized) {
                 showAuthorizationQuestionDialog()
-            }
-            else {
-                //findNavController().navigate(R.id.action_feedFragment_to_newPostFragment)
-                val direction = FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewEvent = true)
+            } else {
+                val direction =
+                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewEvent = true)
                 findNavController().navigate(direction)
             }
         }
@@ -159,38 +226,29 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         return binding.root
     }
 
-    private fun showMap(coordinates: Coordinates) {
-        val direction = FeedFragmentDirections.actionFeedFragmentToMapFragment(coordinates = coordinates, readOnly = true)
-        findNavController().navigate(direction)
+    private fun setFabAddButtonVisibility(view: View) {
+        view.isVisible = isNotAnotherUserPage(filterBy)
     }
 
-    private fun showUsersPopupMenu(view: View, usersList: List<Long>, users: Map<Long, UserPreview>) {
-        val popupMenu = PopupMenu(view.context, view)
-        usersList.forEach { userId ->
-            popupMenu.menu.add(
-                0,
-                userId.toInt(),
-                Menu.NONE,
-                if (authUser?.id == userId) getString(R.string.me_text) else users[userId]?.name
-                    ?: getString(R.string.undefined)
-            )
-        }
+    private fun isNotAnotherUserPage(filterBy: Long): Boolean {
+        val authorizedUserId = appAuth.getAuthorizedUserId()
+        return (((filterBy == authorizedUserId) && (authorizedUserId != 0L)) || ((filterBy == 0L) && (authorizedUserId != 0L)))
+    }
 
+    private fun setListenersAndShowPopupMenu(popupMenu: PopupMenu) {
         popupMenu.setOnMenuItemClickListener {
-            return@setOnMenuItemClickListener true
+            postViewModel.setFilterBy(it.itemId.toLong())
+            true
         }
         popupMenu.show()
     }
 
-    private fun showErrorDialog(message: String?) {
-        dialog = AppDialogs.getDialog(
-            requireContext(),
-            AppDialogs.ERROR_DIALOG,
-            title = getString(R.string.an_error_has_occurred),
-            message = message ?: getString(R.string.an_error_has_occurred),
-            titleIcon = R.drawable.ic_baseline_error_24,
-            isCancelable = true
+    private fun showMap(coordinates: Coordinates) {
+        val direction = FeedFragmentDirections.actionFeedFragmentToMapFragment(
+            coordinates = coordinates,
+            readOnly = true
         )
+        findNavController().navigate(direction)
     }
 
     private fun setActionBarSubTitle(subTitle: String? = null) {

@@ -5,5 +5,6 @@ data class User(
     val login: String,
     val name: String,
     val avatar: String? = null,
-    var isChecked: Boolean = false
+    var isChecked: Boolean = false,
+    var itsMe: Boolean = false,
 ): java.io.Serializable

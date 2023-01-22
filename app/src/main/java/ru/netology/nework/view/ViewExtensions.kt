@@ -17,9 +17,12 @@ fun ImageView.loadCircleCrop(url: String, vararg transforms: BitmapTransformatio
     load(url, CircleCrop(), *transforms)
 
 @SuppressLint("UseCompatLoadingForDrawables")
-fun ImageView.loadFromResource(resource: Int, vararg transforms: BitmapTransformation = emptyArray()) =
+fun ImageView.loadFromResource(
+    resource: Int,
+    vararg transforms: BitmapTransformation = emptyArray()
+) =
     Glide.with(this)
-    .load(context.getDrawable(resource))
-    .timeout(10_000)
-    .transform(*transforms)
-    .into(this)
+        .load(context.getDrawable(resource))
+        .timeout(10_000)
+        .transform(*transforms)
+        .into(this)

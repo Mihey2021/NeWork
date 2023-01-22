@@ -42,13 +42,13 @@ class ArrayWithImageAdapter<T>(
         if (binding is UserItemBinding) {
             with(binding) {
                 val dataItem = item as User
-                userName.text = dataItem.name
+                userName.text = if(dataItem.itsMe) userName.context.getString(R.string.me_text) else dataItem.name
                 checkBox.isChecked = dataItem.isChecked
                 checkBox.setOnClickListener {
                     dataItem.isChecked = !dataItem.isChecked
                 }
                 if (dataItem.avatar != null)
-                    avatar.loadCircleCrop(dataItem.avatar!!)
+                    avatar.loadCircleCrop(dataItem.avatar)
                 else
                     avatar.loadFromResource(R.drawable.ic_baseline_account_circle_24)
             }

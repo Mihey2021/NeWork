@@ -8,9 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import ru.netology.nework.models.FeedModelState
 import ru.netology.nework.models.user.User
-import ru.netology.nework.repository.AuthAndRegisterRepository
 import ru.netology.nework.repository.CommonRepository
-import java.util.concurrent.Flow
 import javax.inject.Inject
 
 @HiltViewModel

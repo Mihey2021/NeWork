@@ -1,6 +1,6 @@
 package ru.netology.nework.models
 
 data class Token(
-    val id: Int,
+    val id: Long,
     val token: String? = null
 )

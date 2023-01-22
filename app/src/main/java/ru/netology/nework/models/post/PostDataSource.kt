@@ -4,29 +4,53 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import retrofit2.HttpException
 import ru.netology.nework.api.ApiService
+import ru.netology.nework.auth.AppAuth
 import java.io.IOException
 import javax.inject.Inject
 
-private var maxId: Int? = null
-
 class PostDataSource @Inject constructor(
     private val apiService: ApiService,
+    private val filterBy: Long = 0L,
+    private val authUserId: Long? = null,
 ) : PagingSource<Long, Post>() {
+
+    @Inject
+    lateinit var appAuth: AppAuth
 
     override suspend fun load(params: LoadParams<Long>): LoadResult<Long, Post> {
         try {
             val result = when (params) {
                 is LoadParams.Append -> {
-                    apiService.getBefore(id = params.key, count = params.loadSize)
+                    if (filterBy == 0L) {
+                        apiService.getBefore(id = params.key, count = params.loadSize)
+                    } else {
+                        if (filterBy == authUserId) //Получаем свою стену
+                            apiService.getWallBefore(id = params.key, count = params.loadSize)
+                        else //Получаем стену другого пользователя
+                            apiService.getUserWallBefore(userId = filterBy, id = params.key, count = params.loadSize)
+                    }
                 }
                 is LoadParams.Prepend -> {
-                    apiService.getNewer(id = params.key)
+                    if (filterBy == 0L)
+                        apiService.getNewer(id = params.key)
+                    else
+                        if (filterBy == authUserId)
+                            apiService.getWallNewer(id = params.key)
+                        else
+                            apiService.getUserWallNewer(userId = filterBy, id = params.key)
                     //return LoadResult.Page(data = emptyList(), nextKey = null, prevKey = params.key)
                 }
                 is LoadParams.Refresh -> {
-                    apiService.getLatest(params.loadSize)
+                    if (filterBy == 0L)
+                        apiService.getLatest(params.loadSize)
+                    else
+                        if (filterBy == authUserId)
+                            apiService.getWallLatest(params.loadSize)
+                        else
+                            apiService.getUserWallLatest(userId = filterBy, params.loadSize)
                 }
             }
+
             if (!result.isSuccessful)
                 throw HttpException(result)
 

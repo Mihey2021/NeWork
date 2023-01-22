@@ -7,10 +7,12 @@ import ru.netology.nework.errors.ApiError
 import ru.netology.nework.errors.AppError
 import ru.netology.nework.errors.NetworkError
 import ru.netology.nework.errors.UnknownError
-import ru.netology.nework.models.*
+import ru.netology.nework.models.Attachment
+import ru.netology.nework.models.AttachmentType
+import ru.netology.nework.models.Media
+import ru.netology.nework.models.MediaUpload
 import ru.netology.nework.models.post.Post
 import ru.netology.nework.models.post.PostCreateRequest
-import ru.netology.nework.models.user.User
 import java.io.IOException
 import javax.inject.Inject
 
@@ -21,13 +23,15 @@ class PostRepositoryImpl @Inject constructor(
     override suspend fun likeById(id: Long, likedByMe: Boolean): Post {
         if (likedByMe) {
             return disLikeById(id)
-
         }
 
         try {
             val response = apiService.likeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
             return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
@@ -41,7 +45,10 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = apiService.dislikeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
             return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: IOException) {
@@ -51,14 +58,17 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun save(post: PostCreateRequest) {
+    override suspend fun save(post: PostCreateRequest): Post {
         try {
             val response = apiService.save(post)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
 
-            val body = response.body() ?: throw ApiError(response.code(), response.message())
+            return response.body() ?: throw ApiError(response.code(), response.message())
         } catch (e: ApiError) {
             throw e
         } catch (e: IOException) {
@@ -68,13 +78,12 @@ class PostRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveWithAttachment(post: PostCreateRequest, upload: MediaUpload) {
+    override suspend fun saveWithAttachment(post: PostCreateRequest, upload: MediaUpload): Post {
         try {
             val media = upload(upload)
-            // TODO: add support for other types
             val postWithAttachment =
                 post.copy(attachment = Attachment(media.url, AttachmentType.IMAGE))
-            save(postWithAttachment)
+            return save(postWithAttachment)
         } catch (e: AppError) {
             throw e
         } catch (e: ApiError) {
@@ -94,7 +103,10 @@ class PostRepositoryImpl @Inject constructor(
 
             val response = apiService.upload(media)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
 
             return response.body() ?: throw ApiError(response.code(), response.message())
@@ -109,7 +121,10 @@ class PostRepositoryImpl @Inject constructor(
         try {
             val response = apiService.removeById(id)
             if (!response.isSuccessful) {
-                throw ApiError(response.code(), response.errorBody()?.string() ?: response.message())
+                throw ApiError(
+                    response.code(),
+                    response.errorBody()?.string() ?: response.message()
+                )
             }
             if (response.code() != 200) ApiError(response.code(), response.message())
         } catch (e: IOException) {

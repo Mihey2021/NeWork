@@ -1,18 +1,15 @@
 package ru.netology.nework.adapters
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.netology.nework.R
 import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.models.*
@@ -20,17 +17,20 @@ import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.utils.AdditionalFunctions
 import ru.netology.nework.view.loadCircleCrop
 import ru.netology.nework.view.loadFromResource
-import java.text.SimpleDateFormat
 import java.util.*
 
 interface OnInteractionListener {
     fun onLike(post: DataItem) {}
-    fun onLikeLongClick(view: View, post: DataItem) {}
+    fun onLikeLongClick(view: View, dataItem: DataItem) {}
+    fun onMentionClick(view: View, dataItem: DataItem) {}
+    fun onSpeakerClick(view: View, dataItem: DataItem) {}
+    fun onParticipantsClick(eventId: Long, participatedByMe: Boolean) {}
+    fun onParticipantsLongClick(view: View, dataItem: DataItem) {}
     fun onEdit(post: DataItem) {}
     fun onRemove(post: DataItem) {}
-    fun onMention(post: DataItem) {}
     fun onPhotoView(photoUrl: String) {}
     fun onCoordinatesClick(coordinates: Coordinates) {}
+    fun onAvatarClick(authorId: Long)
 }
 
 class PostsAdapter(
@@ -65,15 +65,25 @@ class ViewHolder(
     private val binding: PostCardBinding,
     private val onInteractionListener: OnInteractionListener,
 ) : RecyclerView.ViewHolder(binding.root) {
+    private var additionalText: String = ""
 
+    @SuppressLint("SetTextI18n")
     fun <T : DataItem> bind(dataItem: T) {
         binding.apply {
             author.text = dataItem.author
-            published.text = getFormattedDate(dataItem.published)
+            published.text = AdditionalFunctions.getFormattedStringDateTime(
+                stringDateTime = dataItem.published,
+                returnOriginalDateIfExceptException = true
+            )
             content.text = dataItem.content
             if (dataItem.authorAvatar != null) avatar.loadCircleCrop(dataItem.authorAvatar!!) else avatar.loadFromResource(
                 R.drawable.ic_baseline_account_circle_24
             )
+
+            avatar.setOnClickListener {
+                onInteractionListener.onAvatarClick(dataItem.authorId)
+            }
+
             if (dataItem.coords != null) {
                 coordinates.text = dataItem.coords.toString()
                 coordinates.setOnClickListener {
@@ -85,9 +95,7 @@ class ViewHolder(
             }
             link.text = dataItem.link
             like.isChecked = dataItem.likedByMe
-            like.text = "${dataItem.likeOwnerIds.size}"
-            mention.isChecked = dataItem.mentionedMe
-            mention.text = "${dataItem.mentionIds.size}"
+            like.text = dataItem.likeOwnerIds.count().toString()
 
             menu.isVisible = dataItem.ownedByMe
 
@@ -118,7 +126,7 @@ class ViewHolder(
                                 onInteractionListener.onRemove(dataItem)
                                 true
                             }
-                            R.id.edit -> {
+                            R.id.content -> {
                                 onInteractionListener.onEdit(dataItem)
                                 true
                             }
@@ -138,33 +146,64 @@ class ViewHolder(
                 return@setOnLongClickListener true
             }
 
-            mention.setOnClickListener {
-                onInteractionListener.onMention(dataItem)
+            mention.isChecked = dataItem.mentionedMe
+            mention.text = "${dataItem.mentionIds.size}"
+            AdditionalFunctions.setMaterialButtonIconColor(mention, R.color.gray)
+            if (dataItem.mentionIds.isNotEmpty()) {
+                additionalText = mention.text.toString()
+                if (dataItem.mentionedMe) {
+                    additionalText += " (${mention.context.getString(R.string.you_have_been_marked)})"
+                    AdditionalFunctions.setMaterialButtonIconColor(
+                        mention,
+                        R.color.green
+                    )
+                } else {
+                    AdditionalFunctions.setMaterialButtonIconColor(
+                        mention,
+                        R.color.blue
+                    )
+                }
+                mention.text = additionalText
+                mention.setOnClickListener {
+                    onInteractionListener.onMentionClick(it, dataItem)
+                }
             }
+
+            speakers.text = dataItem.speakerIds.count().toString()
+            participants.text = dataItem.participantsIds.count().toString()
 
             if (dataItem is EventListItem) {
                 eventDetailGroup.visibility = View.VISIBLE
-                eventDate.text = getFormattedDate(dataItem.datetime)
+                eventDate.text = AdditionalFunctions.getFormattedStringDateTime(
+                    stringDateTime = dataItem.datetime,
+                    returnOriginalDateIfExceptException = true
+                )
                 AdditionalFunctions.setEventTypeColor(iconType.context, iconType, dataItem.type)
                 textType.text = dataItem.type.toString()
+                mention.visibility = View.GONE
+                speakers.visibility = View.VISIBLE
+                speakers.setOnClickListener {
+                    onInteractionListener.onSpeakerClick(it, dataItem)
+                }
+                participants.visibility = View.VISIBLE
+
+                participants.setOnClickListener {
+                    onInteractionListener.onParticipantsClick(
+                        dataItem.id,
+                        dataItem.participatedByMe
+                    )
+                }
+                participants.setOnLongClickListener {
+                    onInteractionListener.onParticipantsLongClick(it, dataItem)
+                    true
+                }
             } else {
+                mention.visibility = View.VISIBLE
                 eventDetailGroup.visibility = View.GONE
+                speakers.visibility = View.GONE
+                participants.visibility = View.GONE
             }
         }
-    }
-
-    @SuppressLint("SimpleDateFormat")
-    private fun getFormattedDate(stringDateTime: String): CharSequence {
-        var formattedData = stringDateTime
-        try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'")
-            sdf.timeZone = TimeZone.getTimeZone("UTC")
-            val strToDate = sdf.parse(stringDateTime)
-            formattedData = SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(strToDate).toString()
-        } catch (e: Exception) {
-            //Из API внезапно пришла дата в другом формате - Можно записать в лог для анализа
-        }
-        return formattedData
     }
 }
 

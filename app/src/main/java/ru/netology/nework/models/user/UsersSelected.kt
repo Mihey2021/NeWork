@@ -1,5 +1,5 @@
 package ru.netology.nework.models.user
 
-data class UserDataModel(
+data class UsersSelected(
     val users: MutableMap<Long, String> = mutableMapOf()
 ): java.io.Serializable
