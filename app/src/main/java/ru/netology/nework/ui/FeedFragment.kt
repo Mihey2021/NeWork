@@ -27,72 +27,41 @@ class FeedFragment : Fragment() {
 
     @Inject
     lateinit var appAuth: AppAuth
+    lateinit var adapter: PagerAdapter
+    lateinit var binding: FragmentFeedBinding
 
     private var showingJobs: Boolean = false
-    private var filterBy: Long = -1L
-
-    lateinit var adapter: PagerAdapter
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        //outState.putLong(FILTER_BY_USER_ID, filterBy)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        if (savedInstanceState != null)
-//            filterBy = savedInstanceState.getLong(FILTER_BY_USER_ID)
-
-        val binding = FragmentFeedBinding.inflate(layoutInflater)
-        init(binding)
+        binding = FragmentFeedBinding.inflate(layoutInflater)
+        init()
     }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val binding = FragmentFeedBinding.inflate(inflater, container, false)
+    ): View {
 
-//        if (savedInstanceState != null)
-//            filterBy = savedInstanceState.getLong(FILTER_BY_USER_ID)
-
-        postViewModel.filterBy.observe(viewLifecycleOwner) { it ->
-            //if (filterBy == it) return@observe
-
+        postViewModel.filterBy.observe(viewLifecycleOwner) {
             showingJobs = (it != 0L)
             with(binding) {
-                val tabEvents = tabs.getTabAt(1)
-                val tabJobs = tabs.getTabAt(2)
-                when (it) {
-                    0L -> {
-                        if (tabJobs != null) {
-                            tabs.removeTab(tabJobs)
-                        }
+                val tabTwo = tabs.getTabAt(1)
+                if (tabTwo != null) {
+                    tabs.removeTab(tabTwo)
 
-                        if (tabEvents == null) {
-                            val newTab = tabs.newTab()
-                                .also { newTab -> newTab.text = getString(R.string.events) }
-                            tabs.addTab(newTab)
+                    val newTab = tabs.newTab()
+                        .also { newTab ->
+                            newTab.text =
+                                if (it == 0L) getString(R.string.events) else getString(R.string.jobs)
                         }
-                    }
-                    else -> {
-                        if (tabEvents != null) {
-                            tabs.removeTab(tabEvents)
-                        }
-
-                        if (tabJobs == null) {
-                            val newTab = tabs.newTab()
-                                .also { newTab -> newTab.text = getString(R.string.jobs) }
-                            tabs.addTab(newTab)
-                        }
-                    }
+                    tabs.addTab(newTab)
                 }
+                adapter.showingJobs = showingJobs
+                viewPager.adapter?.notifyItemChanged(1)
             }
-
-            filterBy = it
-            init(binding)
         }
 
         authViewModel.authUser.observe(viewLifecycleOwner) {
@@ -110,10 +79,11 @@ class FeedFragment : Fragment() {
         return binding.root
     }
 
-    private fun init(binding: FragmentFeedBinding) {
+    private fun init() {
         val viewPager = binding.viewPager
         adapter = PagerAdapter(this, showingJobs)
         viewPager.adapter = adapter
+        viewPager.isSaveEnabled = false
 
         TabLayoutMediator(binding.tabs, viewPager) { tab, pos ->
             when (pos) {

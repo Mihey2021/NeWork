@@ -9,7 +9,7 @@ import ru.netology.nework.ui.PostsFragment
 
 class PagerAdapter(
     fragmentActivity: FeedFragment,
-    private var showingJobs: Boolean = false,
+    var showingJobs: Boolean = false,
 ) : FragmentStateAdapter(fragmentActivity) {
     override fun getItemCount(): Int {
         return 2
