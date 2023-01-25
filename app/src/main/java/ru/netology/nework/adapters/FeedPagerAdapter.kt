@@ -7,7 +7,7 @@ import ru.netology.nework.ui.FeedFragment
 import ru.netology.nework.ui.JobsFragment
 import ru.netology.nework.ui.PostsFragment
 
-class PagerAdapter(
+class FeedPagerAdapter(
     fragmentActivity: FeedFragment,
     var showingJobs: Boolean = false,
 ) : FragmentStateAdapter(fragmentActivity) {
@@ -18,7 +18,7 @@ class PagerAdapter(
     override fun createFragment(position: Int): Fragment {
         return when (position) {
             0 -> PostsFragment()
-            else -> if (showingJobs) JobsFragment() else EventsFragment()
+            else -> EventsFragment()
         }
     }
 }

@@ -1,15 +1,18 @@
 package ru.netology.nework.ui
 
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.activity.viewModels
+import androidx.core.os.bundleOf
 import androidx.core.view.MenuProvider
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.NavigationUI
 import dagger.hilt.android.AndroidEntryPoint
 import ru.netology.nework.R
@@ -85,12 +88,14 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                             }
                         }
                         R.id.myWall -> {
-                            postViewModel.setFilterBy(authData?.id ?: 0L)
+                            //postViewModel.setFilterBy(authData?.id ?: 0L)
+                            findNavController(R.id.nav_host_fragment).navigate(Uri.parse("diplomapp://nework/maps?userId=${appAuth.getAuthorizedUserId()}"))
                             true
                         }
 
                         R.id.feed -> {
-                            postViewModel.setFilterBy(0L)
+                            //postViewModel.setFilterBy(0L)
+                            findNavController(R.id.nav_host_fragment).navigateUp()
                             true
                         }
                         else -> false

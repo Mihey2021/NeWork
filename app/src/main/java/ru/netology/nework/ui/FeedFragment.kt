@@ -10,7 +10,7 @@ import androidx.fragment.app.activityViewModels
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import ru.netology.nework.R
-import ru.netology.nework.adapters.PagerAdapter
+import ru.netology.nework.adapters.FeedPagerAdapter
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentFeedBinding
 import ru.netology.nework.utils.MenuState
@@ -27,7 +27,7 @@ class FeedFragment : Fragment() {
 
     @Inject
     lateinit var appAuth: AppAuth
-    lateinit var adapter: PagerAdapter
+    lateinit var adapter: FeedPagerAdapter
     lateinit var binding: FragmentFeedBinding
 
     private var showingJobs: Boolean = false
@@ -45,51 +45,51 @@ class FeedFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
-        postViewModel.filterBy.observe(viewLifecycleOwner) {
-            showingJobs = (it != 0L)
-            with(binding) {
-                val tabTwo = tabs.getTabAt(1)
-                if (tabTwo != null) {
-                    tabs.removeTab(tabTwo)
-
-                    val newTab = tabs.newTab()
-                        .also { newTab ->
-                            newTab.text =
-                                if (it == 0L) getString(R.string.events) else getString(R.string.jobs)
-                        }
-                    tabs.addTab(newTab)
-                }
-                adapter.showingJobs = showingJobs
-                viewPager.adapter?.notifyItemChanged(1)
-            }
-        }
-
-        authViewModel.authUser.observe(viewLifecycleOwner) {
-            setActionBarSubTitle(it?.name)
-        }
-
-        authViewModel.authData.observe(viewLifecycleOwner) {
-            if (it != null) {
-                authViewModel.getUserById(it.id)
-            } else {
-                setActionBarSubTitle()
-            }
-        }
+//        postViewModel.filterBy.observe(viewLifecycleOwner) {
+//            showingJobs = (it != 0L)
+//            with(binding) {
+//                val tabTwo = tabs.getTabAt(1)
+//                if (tabTwo != null) {
+//                    tabs.removeTab(tabTwo)
+//
+//                    val newTab = tabs.newTab()
+//                        .also { newTab ->
+//                            newTab.text =
+//                                if (it == 0L) getString(R.string.events) else getString(R.string.jobs)
+//                        }
+//                    tabs.addTab(newTab)
+//                }
+//                adapter.showingJobs = showingJobs
+//                viewPager.adapter?.notifyItemChanged(1)
+//            }
+//        }
+//
+//        authViewModel.authUser.observe(viewLifecycleOwner) {
+//            setActionBarSubTitle(it?.name)
+//        }
+//
+//        authViewModel.authData.observe(viewLifecycleOwner) {
+//            if (it != null) {
+//                authViewModel.getUserById(it.id)
+//            } else {
+//                setActionBarSubTitle()
+//            }
+//        }
 
         return binding.root
     }
 
     private fun init() {
         val viewPager = binding.viewPager
-        adapter = PagerAdapter(this, showingJobs)
+        adapter = FeedPagerAdapter(this, showingJobs)
         viewPager.adapter = adapter
         viewPager.isSaveEnabled = false
 
         TabLayoutMediator(binding.tabs, viewPager) { tab, pos ->
             when (pos) {
                 0 -> tab.text = getString(R.string.posts)
-                1 -> tab.text =
-                    if (showingJobs) getString(R.string.jobs) else getString(R.string.events)
+                1 -> tab.text = getString(R.string.events)
+                    //if (showingJobs) getString(R.string.jobs) else getString(R.string.events)
             }
         }.attach()
     }

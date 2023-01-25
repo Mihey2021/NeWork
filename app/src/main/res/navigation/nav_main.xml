@@ -71,8 +71,8 @@
             app:nullable="true" />
         <argument
             android:name="readOnly"
-            app:argType="boolean"
-            android:defaultValue="false" />
+            android:defaultValue="false"
+            app:argType="boolean" />
     </fragment>
     <fragment
         android:id="@+id/userListFragment"
@@ -102,4 +102,19 @@
             app:nullable="true"
             android:defaultValue="@null" />
     </fragment>
+    <fragment
+        android:id="@+id/userPageFragment"
+        android:name="ru.netology.nework.ui.UserPageFragment"
+        android:label="fragment_user_page"
+        tools:layout="@layout/fragment_user_page">
+        <deepLink
+            android:id="@+id/deepLink3"
+            android:autoVerify="true"
+            app:uri="diplomapp://nework/maps?userId={userId}" />
+        <argument
+            android:name="userId"
+            android:defaultValue="0L"
+            app:argType="long" />
+    </fragment>
+    <action android:id="@+id/action_global_userPageFragment" app:destination="@id/userPageFragment" />
 </navigation>
