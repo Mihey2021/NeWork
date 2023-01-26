@@ -59,7 +59,8 @@ class JobsFragment : Fragment(R.layout.fragment_jobs) {
 
             override fun onEdit(job: Job) {
                 val direction =
-                    FeedFragmentDirections.actionFeedFragmentToNewJobFragment(job = job)
+                    UserPageFragmentDirections.actionUserPageFragmentToNewJobFragment(job = job)
+                    //FeedFragmentDirections.actionFeedFragmentToNewJobFragment(job = job)
                 findNavController().navigate(direction)
             }
         }, isMyPage())
@@ -98,8 +99,7 @@ class JobsFragment : Fragment(R.layout.fragment_jobs) {
             if (!viewModel.authorized) {
                 showAuthorizationQuestionDialog()
             } else {
-                val direction =
-                    FeedFragmentDirections.actionFeedFragmentToNewJobFragment()
+                val direction = UserPageFragmentDirections.actionUserPageFragmentToNewJobFragment()
                 findNavController().navigate(direction)
             }
         }

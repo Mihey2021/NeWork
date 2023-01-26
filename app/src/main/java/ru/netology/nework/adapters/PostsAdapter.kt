@@ -15,8 +15,8 @@ import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.models.*
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.utils.AdditionalFunctions
-import ru.netology.nework.view.loadCircleCrop
-import ru.netology.nework.view.loadFromResource
+import ru.netology.nework.extensions.loadCircleCrop
+import ru.netology.nework.extensions.loadFromResource
 import java.util.*
 
 interface OnInteractionListener {

@@ -60,7 +60,12 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         adapter = EventsAdapter(object : OnInteractionListener {
             override fun onEdit(event: DataItem) {
                 val direction =
-                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = event as EventListItem)
+                    if (requireParentFragment() is FeedFragment)
+                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = event as EventListItem)
+                    else
+                        UserPageFragmentDirections.actionUserPageFragmentToNewPostFragment(
+                            editingData = event as EventListItem
+                        )
                 findNavController().navigate(direction)
             }
 
@@ -218,7 +223,12 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                 showAuthorizationQuestionDialog()
             } else {
                 val direction =
-                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewEvent = true)
+                    if (requireParentFragment() is FeedFragment)
+                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewEvent = true)
+                    else
+                        UserPageFragmentDirections.actionUserPageFragmentToNewPostFragment(
+                            isNewEvent = true
+                        )
                 findNavController().navigate(direction)
             }
         }
@@ -244,10 +254,17 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
     }
 
     private fun showMap(coordinates: Coordinates) {
-        val direction = FeedFragmentDirections.actionFeedFragmentToMapFragment(
-            coordinates = coordinates,
-            readOnly = true
-        )
+        val direction =
+            if (requireParentFragment() is FeedFragment)
+                FeedFragmentDirections.actionFeedFragmentToMapFragment(
+                    coordinates = coordinates,
+                    readOnly = true
+                )
+            else
+                UserPageFragmentDirections.actionUserPageFragmentToMapFragment(
+                    coordinates = coordinates,
+                    readOnly = true
+                )
         findNavController().navigate(direction)
     }
 

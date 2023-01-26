@@ -1,4 +1,4 @@
-package ru.netology.nework.view
+package ru.netology.nework.extensions
 
 import android.annotation.SuppressLint
 import android.widget.ImageView

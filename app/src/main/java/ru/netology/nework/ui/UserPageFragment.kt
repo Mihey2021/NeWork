@@ -5,13 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.google.android.material.tabs.TabLayoutMediator
 import ru.netology.nework.R
 import ru.netology.nework.adapters.FeedPagerAdapter
 import ru.netology.nework.adapters.UserPagePagerAdapter
 import ru.netology.nework.databinding.FragmentUserPageBinding
+import ru.netology.nework.viewmodels.PostViewModel
 
 class UserPageFragment: Fragment(R.layout.fragment_user_page) {
+
+    private val postViewModel: PostViewModel by activityViewModels()
 
     lateinit var binding: FragmentUserPageBinding
     lateinit var adapter: UserPagePagerAdapter
@@ -29,6 +33,7 @@ class UserPageFragment: Fragment(R.layout.fragment_user_page) {
         savedInstanceState: Bundle?
     ): View? {
         val userId = arguments?.getLong("userId")
+        postViewModel.setFilterBy(userId ?: -1L)
         return binding.root
     }
 

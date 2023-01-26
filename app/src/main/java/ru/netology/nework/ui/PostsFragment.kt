@@ -55,7 +55,12 @@ class PostsFragment : Fragment() {
         adapter = PostsAdapter(object : OnInteractionListener {
             override fun onEdit(post: DataItem) {
                 val direction =
-                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = post as PostListItem)
+                    if (requireParentFragment() is FeedFragment)
+                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = post as PostListItem)
+                    else
+                        UserPageFragmentDirections.actionUserPageFragmentToNewPostFragment(
+                            editingData = post as PostListItem
+                        )
                 findNavController().navigate(direction)
             }
 
@@ -109,6 +114,10 @@ class PostsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val binding = FragmentPostsBinding.inflate(inflater)
+
+        //val userId = arguments?.getLong("userId")
+        if (requireParentFragment() is FeedFragment)
+            viewModel.setFilterBy(0L)
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
@@ -184,7 +193,10 @@ class PostsFragment : Fragment() {
                 showAuthorizationQuestionDialog()
             } else {
                 val direction =
-                    FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewPost = true)
+                    if (requireParentFragment() is FeedFragment)
+                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(isNewPost = true)
+                    else
+                        UserPageFragmentDirections.actionUserPageFragmentToNewPostFragment(isNewPost = true)
                 findNavController().navigate(direction)
             }
         }
@@ -210,10 +222,17 @@ class PostsFragment : Fragment() {
     }
 
     private fun showMap(coordinates: Coordinates) {
-        val direction = FeedFragmentDirections.actionFeedFragmentToMapFragment(
-            coordinates = coordinates,
-            readOnly = true
-        )
+        val direction =
+            if (requireParentFragment() is FeedFragment)
+                FeedFragmentDirections.actionFeedFragmentToMapFragment(
+                    coordinates = coordinates,
+                    readOnly = true
+                )
+            else
+                UserPageFragmentDirections.actionUserPageFragmentToMapFragment(
+                    coordinates = coordinates,
+                    readOnly = true
+                )
         findNavController().navigate(direction)
     }
 

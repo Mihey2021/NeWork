@@ -13,8 +13,8 @@ import ru.netology.nework.databinding.UserItemBinding
 import ru.netology.nework.models.event.EventType
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
-import ru.netology.nework.view.loadCircleCrop
-import ru.netology.nework.view.loadFromResource
+import ru.netology.nework.extensions.loadCircleCrop
+import ru.netology.nework.extensions.loadFromResource
 
 class ArrayWithImageAdapter<T>(
     @ApplicationContext

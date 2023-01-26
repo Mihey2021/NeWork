@@ -26,9 +26,6 @@
         <action
             android:id="@+id/action_feedFragment_to_mapFragment"
             app:destination="@id/mapFragment" />
-        <action
-            android:id="@+id/action_feedFragment_to_newJobFragment"
-            app:destination="@id/newJobFragment" />
     </fragment>
     <fragment
         android:id="@+id/registrationFragment"
@@ -115,6 +112,15 @@
             android:name="userId"
             android:defaultValue="0L"
             app:argType="long" />
+        <action
+            android:id="@+id/action_userPageFragment_to_newJobFragment"
+            app:destination="@id/newJobFragment" />
+        <action
+            android:id="@+id/action_userPageFragment_to_newPostFragment"
+            app:destination="@id/newPostFragment" />
+        <action
+            android:id="@+id/action_userPageFragment_to_mapFragment"
+            app:destination="@id/mapFragment" />
     </fragment>
     <action android:id="@+id/action_global_userPageFragment" app:destination="@id/userPageFragment" />
 </navigation>
