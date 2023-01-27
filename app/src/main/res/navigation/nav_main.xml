@@ -107,7 +107,7 @@
         <deepLink
             android:id="@+id/deepLink3"
             android:autoVerify="true"
-            app:uri="diplomapp://nework/maps?userId={userId}" />
+            app:uri="diplomapp://nework/userPage?userId={userId}" />
         <argument
             android:name="userId"
             android:defaultValue="0L"

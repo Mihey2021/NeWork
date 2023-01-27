@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.auth.AppAuth
+import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.*
 import ru.netology.nework.models.post.Post
 import ru.netology.nework.models.post.PostCreateRequest
@@ -34,6 +35,7 @@ class PostViewModel @Inject constructor(
     private val repository: PostRepository,
     private val apiService: ApiService,
     private val appAuth: AppAuth,
+    private val filters: Filters,
 ) : ViewModel() {
 
     private val authData: LiveData<Token?> = appAuth.authStateFlow.asLiveData(Dispatchers.Default)
@@ -43,11 +45,12 @@ class PostViewModel @Inject constructor(
     private val localChangesFlow = MutableStateFlow(OnChange(localChanges))
 
     private val _filterBy = MutableLiveData(0L)
-    val filterBy: LiveData<Long>
-        get() = _filterBy
+//    val filterBy: LiveData<Long>
+//        get() = _filterBy
+    val filterBy = filters.filterBy
 
     init {
-        val data: Flow<PagingData<Post>> = _filterBy.asFlow()
+        val data: Flow<PagingData<Post>> = filterBy.asFlow()
             .flatMapLatest {
                 Pager(
                     config = PagingConfig(
@@ -77,10 +80,10 @@ class PostViewModel @Inject constructor(
     val photo: LiveData<PhotoModel>
         get() = _photo
 
-    fun setFilterBy(userId: Long) {
-        if (this._filterBy.value == userId) return
-        this._filterBy.value = userId
-    }
+//    fun setFilterBy(userId: Long) {
+//        if (this._filterBy.value == userId) return
+//        this._filterBy.value = userId
+//    }
 
     private fun merge(
         posts: PagingData<Post>,

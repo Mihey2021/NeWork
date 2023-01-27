@@ -26,6 +26,7 @@ import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentPostsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
+import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.post.PostListItem
@@ -48,6 +49,9 @@ class PostsFragment : Fragment() {
 
     @Inject
     lateinit var appAuth: AppAuth
+
+    @Inject
+    lateinit var filters: Filters
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,7 +107,8 @@ class PostsFragment : Fragment() {
             }
 
             override fun onAvatarClick(authorId: Long) {
-                viewModel.setFilterBy(authorId)
+                //viewModel.setFilterBy(authorId)
+
             }
 
         })

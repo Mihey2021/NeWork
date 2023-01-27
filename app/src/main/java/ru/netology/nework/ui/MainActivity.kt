@@ -17,6 +17,7 @@ import androidx.navigation.ui.NavigationUI
 import dagger.hilt.android.AndroidEntryPoint
 import ru.netology.nework.R
 import ru.netology.nework.auth.AppAuth
+import ru.netology.nework.filter.Filters
 import ru.netology.nework.utils.MenuState
 import ru.netology.nework.utils.MenuStates
 import ru.netology.nework.viewmodels.AuthViewModel
@@ -35,6 +36,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     @Inject
     lateinit var appAuth: AppAuth
+
+    @Inject
+    lateinit var filters: Filters
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +93,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                         }
                         R.id.myWall -> {
                             //postViewModel.setFilterBy(authData?.id ?: 0L)
+                            findNavController(R.id.nav_host_fragment).
                             findNavController(R.id.nav_host_fragment).navigate(Uri.parse("diplomapp://nework/maps?userId=${appAuth.getAuthorizedUserId()}"))
                             true
                         }
@@ -105,7 +110,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             })
         }
 
-        postViewModel.filterBy.observe(this) {
+        filters.filterBy.observe(this) {
             filterValue = it
             this.invalidateMenu()
         }
