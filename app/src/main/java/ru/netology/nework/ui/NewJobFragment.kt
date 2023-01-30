@@ -2,7 +2,6 @@ package ru.netology.nework.ui
 
 import android.os.Bundle
 import android.view.*
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -36,7 +35,6 @@ class NewJobFragment : Fragment(R.layout.fragment_new_job) {
     private val viewModel: JobsViewModel by activityViewModels()
     val args: NewJobFragmentArgs by navArgs()
 
-    private var dialog: AlertDialog? = null
     private var editJob: Job? = null
 
     @Inject
@@ -48,7 +46,7 @@ class NewJobFragment : Fragment(R.layout.fragment_new_job) {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentNewJobBinding.inflate(inflater, container, false)
 
         editJob = args.job
@@ -153,7 +151,8 @@ class NewJobFragment : Fragment(R.layout.fragment_new_job) {
     }
 
     private fun validateForm(): Boolean {
-        var valid = false
+        var valid: Boolean
+
         with(binding) {
             valid = (
                     !name.text.isNullOrBlank() &&

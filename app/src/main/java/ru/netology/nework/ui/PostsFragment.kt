@@ -1,6 +1,5 @@
 package ru.netology.nework.ui
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -19,8 +17,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.netology.nework.R
-import ru.netology.nework.adapters.OnInteractionListener
 import ru.netology.nework.adapters.DataLoadingStateAdapter
+import ru.netology.nework.adapters.OnInteractionListener
 import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentPostsBinding
@@ -29,6 +27,7 @@ import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
+import ru.netology.nework.models.DeepLinks
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
@@ -46,6 +45,7 @@ class PostsFragment : Fragment() {
     private var authUser: User? = null
     private lateinit var adapter: PostsAdapter
     private var filterBy: Long = 0L
+    lateinit var binding: FragmentPostsBinding
 
     @Inject
     lateinit var appAuth: AppAuth
@@ -55,6 +55,8 @@ class PostsFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        binding = FragmentPostsBinding.inflate(layoutInflater)
 
         adapter = PostsAdapter(object : OnInteractionListener {
             override fun onEdit(post: DataItem) {
@@ -108,21 +110,10 @@ class PostsFragment : Fragment() {
 
             override fun onAvatarClick(authorId: Long) {
                 //viewModel.setFilterBy(authorId)
-
+                findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${authorId}"))
             }
 
         })
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        val binding = FragmentPostsBinding.inflate(inflater)
-
-        //val userId = arguments?.getLong("userId")
-        if (requireParentFragment() is FeedFragment)
-            viewModel.setFilterBy(0L)
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
@@ -138,15 +129,24 @@ class PostsFragment : Fragment() {
                 }
             }),
         )
+    }
 
-        viewModel.filterBy.observe(viewLifecycleOwner) {
-            filterBy = it
-            setFabAddButtonVisibility(binding.fabPostAdd)
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+
+        lifecycleScope.launch {
+            filters.filterBy.collectLatest { userId ->
+                filterBy = userId
+                setFabAddButtonVisibility(binding.fabPostAdd)
+            }
         }
 
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
-            if (state.needRefresh) adapter.refresh()
+            if (state.needRefresh)
+                adapter.refresh()
             if (state.error) {
                 if (dialog?.isShowing == false || dialog == null) showErrorDialog(state.errorMessage)
             }
@@ -220,7 +220,8 @@ class PostsFragment : Fragment() {
 
     private fun setListenersAndShowPopupMenu(popupMenu: PopupMenu) {
         popupMenu.setOnMenuItemClickListener {
-            viewModel.setFilterBy(it.itemId.toLong())
+            //filters.setFilterBy(it.itemId.toLong())
+            findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${it.itemId.toLong()}"))
             true
         }
         popupMenu.show()

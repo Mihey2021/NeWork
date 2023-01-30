@@ -2,9 +2,7 @@ package ru.netology.nework.adapters
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
 import android.widget.PopupMenu
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
@@ -74,8 +72,8 @@ class JobsAdapter(
     }
 
     override fun onBindViewHolder(holder: JobsViewHolder, position: Int) {
-        val marker = getItem(position)
-        holder.bind(marker)
+        val job = getItem(position)
+        holder.bind(job)
     }
 }
 

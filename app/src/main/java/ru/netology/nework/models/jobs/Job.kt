@@ -7,4 +7,4 @@ data class Job(
     val start: String,
     val finish: String? = null,
     val link: String? = null,
-):java.io.Serializable
+) : java.io.Serializable

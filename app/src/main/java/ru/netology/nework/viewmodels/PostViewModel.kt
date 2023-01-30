@@ -19,35 +19,28 @@ import ru.netology.nework.models.post.Post
 import ru.netology.nework.models.post.PostCreateRequest
 import ru.netology.nework.models.post.PostDataSource
 import ru.netology.nework.models.post.PostListItem
-import ru.netology.nework.models.user.User
-import ru.netology.nework.repository.CommonRepository
 import ru.netology.nework.repository.PostRepository
 import ru.netology.nework.utils.SingleLiveEvent
 import java.io.File
 import javax.inject.Inject
 
 private val noPhoto = PhotoModel()
-const val PAGE_SIZE = 100
+const val PAGE_SIZE = 3
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PostViewModel @Inject constructor(
     private val repository: PostRepository,
     private val apiService: ApiService,
+    filters: Filters,
     private val appAuth: AppAuth,
-    private val filters: Filters,
 ) : ViewModel() {
-
-    private val authData: LiveData<Token?> = appAuth.authStateFlow.asLiveData(Dispatchers.Default)
 
     val localDataFlow: Flow<PagingData<PostListItem>>
     private val localChanges = LocalChanges()
     private val localChangesFlow = MutableStateFlow(OnChange(localChanges))
 
-    private val _filterBy = MutableLiveData(0L)
-//    val filterBy: LiveData<Long>
-//        get() = _filterBy
-    val filterBy = filters.filterBy
+    private val filterBy = filters.filterBy.asLiveData(Dispatchers.Default)
 
     init {
         val data: Flow<PagingData<Post>> = filterBy.asFlow()
@@ -58,7 +51,7 @@ class PostViewModel @Inject constructor(
                         initialLoadSize = PAGE_SIZE,
                         enablePlaceholders = false
                     ),
-                    pagingSourceFactory = { PostDataSource(apiService, it, authData.value?.id) },
+                    pagingSourceFactory = { PostDataSource(apiService, it, appAuth) },
                 ).flow
             }
             .cachedIn(viewModelScope)
@@ -79,11 +72,6 @@ class PostViewModel @Inject constructor(
     private val _photo = MutableLiveData(noPhoto)
     val photo: LiveData<PhotoModel>
         get() = _photo
-
-//    fun setFilterBy(userId: Long) {
-//        if (this._filterBy.value == userId) return
-//        this._filterBy.value = userId
-//    }
 
     private fun merge(
         posts: PagingData<Post>,

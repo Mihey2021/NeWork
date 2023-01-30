@@ -20,14 +20,14 @@ import ru.netology.nework.extensions.loadFromResource
 import java.util.*
 
 interface OnInteractionListener {
-    fun onLike(post: DataItem) {}
+    fun onLike(data: DataItem) {}
     fun onLikeLongClick(view: View, dataItem: DataItem) {}
     fun onMentionClick(view: View, dataItem: DataItem) {}
     fun onSpeakerClick(view: View, dataItem: DataItem) {}
     fun onParticipantsClick(eventId: Long, participatedByMe: Boolean) {}
     fun onParticipantsLongClick(view: View, dataItem: DataItem) {}
-    fun onEdit(post: DataItem) {}
-    fun onRemove(post: DataItem) {}
+    fun onEdit(data: DataItem) {}
+    fun onRemove(data: DataItem) {}
     fun onPhotoView(photoUrl: String) {}
     fun onCoordinatesClick(coordinates: Coordinates) {}
     fun onAvatarClick(authorId: Long)

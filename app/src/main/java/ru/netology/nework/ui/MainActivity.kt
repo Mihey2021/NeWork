@@ -1,34 +1,34 @@
 package ru.netology.nework.ui
 
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.activity.viewModels
-import androidx.core.os.bundleOf
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.NavigationUI
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import ru.netology.nework.R
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.filter.Filters
+import ru.netology.nework.models.DeepLinks
 import ru.netology.nework.utils.MenuState
 import ru.netology.nework.utils.MenuStates
 import ru.netology.nework.viewmodels.AuthViewModel
-import ru.netology.nework.viewmodels.PostViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     private val authViewModel: AuthViewModel by viewModels()
-    private val postViewModel: PostViewModel by viewModels()
 
     private lateinit var navController: NavController
 
@@ -93,8 +93,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                         }
                         R.id.myWall -> {
                             //postViewModel.setFilterBy(authData?.id ?: 0L)
-                            findNavController(R.id.nav_host_fragment).
-                            findNavController(R.id.nav_host_fragment).navigate(Uri.parse("diplomapp://nework/maps?userId=${appAuth.getAuthorizedUserId()}"))
+                            findNavController(R.id.nav_host_fragment).navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${appAuth.getAuthorizedUserId()}"))
                             true
                         }
 
@@ -110,10 +109,17 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             })
         }
 
-        filters.filterBy.observe(this) {
-            filterValue = it
-            this.invalidateMenu()
+        lifecycleScope.launch {
+            filters.filterBy.collectLatest { userId ->
+                filterValue = userId
+                this@MainActivity.invalidateMenu()
+            }
         }
+
+//        filters.filterBy.observe(this) {
+//            filterValue = it
+//            this.invalidateMenu()
+//        }
     }
 
     private fun clearMenuProvider(currentMenuProvider: MenuProvider?) {

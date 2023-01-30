@@ -24,12 +24,29 @@ class CommonViewModel @Inject constructor(
     val usersList: LiveData<List<User>>
         get() = _usersList
 
+    private val _userDetail = MutableLiveData<User>()
+    val userDetail: LiveData<User>
+        get() = _userDetail
+
     fun getAllUsersList() {
         viewModelScope.launch {
             try {
                 _dataState.value = FeedModelState(loading = true)
                 val usersList = repository.getAllUsers()
                 _usersList.value = usersList
+                _dataState.value = FeedModelState()
+            } catch (e: Exception) {
+                _dataState.value = FeedModelState(error = true)
+            }
+        }
+    }
+
+    fun getUserById(id: Long) {
+        viewModelScope.launch {
+            try {
+                _dataState.value = FeedModelState(loading = true)
+                val user = repository.getUserById(id)
+                _userDetail.value = user
                 _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true)

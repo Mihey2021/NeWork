@@ -74,7 +74,7 @@
     <fragment
         android:id="@+id/userListFragment"
         android:name="ru.netology.nework.ui.UserListFragment"
-        android:label="fragment_user_list"
+        android:label="@string/app_name"
         tools:layout="@layout/fragment_user_list" >
         <argument
             android:name="selectedUsersIds"
@@ -102,10 +102,10 @@
     <fragment
         android:id="@+id/userPageFragment"
         android:name="ru.netology.nework.ui.UserPageFragment"
-        android:label="fragment_user_page"
+        android:label="@string/app_name"
         tools:layout="@layout/fragment_user_page">
         <deepLink
-            android:id="@+id/deepLink3"
+            android:id="@+id/deepLink"
             android:autoVerify="true"
             app:uri="diplomapp://nework/userPage?userId={userId}" />
         <argument

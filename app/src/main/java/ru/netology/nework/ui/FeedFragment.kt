@@ -13,24 +13,27 @@ import ru.netology.nework.R
 import ru.netology.nework.adapters.FeedPagerAdapter
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentFeedBinding
+import ru.netology.nework.filter.Filters
 import ru.netology.nework.utils.MenuState
 import ru.netology.nework.utils.MenuStates
-import ru.netology.nework.viewmodels.AuthViewModel
-import ru.netology.nework.viewmodels.PostViewModel
+import ru.netology.nework.viewmodels.CommonViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class FeedFragment : Fragment() {
 
-    private val postViewModel: PostViewModel by activityViewModels()
-    private val authViewModel: AuthViewModel by activityViewModels()
+    private val commonViewModel: CommonViewModel by activityViewModels()
 
     @Inject
     lateinit var appAuth: AppAuth
+
     lateinit var adapter: FeedPagerAdapter
     lateinit var binding: FragmentFeedBinding
 
     private var showingJobs: Boolean = false
+
+    @Inject
+    lateinit var filters: Filters
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,36 +48,12 @@ class FeedFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
-//        postViewModel.filterBy.observe(viewLifecycleOwner) {
-//            showingJobs = (it != 0L)
-//            with(binding) {
-//                val tabTwo = tabs.getTabAt(1)
-//                if (tabTwo != null) {
-//                    tabs.removeTab(tabTwo)
-//
-//                    val newTab = tabs.newTab()
-//                        .also { newTab ->
-//                            newTab.text =
-//                                if (it == 0L) getString(R.string.events) else getString(R.string.jobs)
-//                        }
-//                    tabs.addTab(newTab)
-//                }
-//                adapter.showingJobs = showingJobs
-//                viewPager.adapter?.notifyItemChanged(1)
-//            }
-//        }
-//
-//        authViewModel.authUser.observe(viewLifecycleOwner) {
-//            setActionBarSubTitle(it?.name)
-//        }
-//
-//        authViewModel.authData.observe(viewLifecycleOwner) {
-//            if (it != null) {
-//                authViewModel.getUserById(it.id)
-//            } else {
-//                setActionBarSubTitle()
-//            }
-//        }
+        filters.setFilterBy(0L)
+
+        commonViewModel.getUserById(appAuth.getAuthorizedUserId())
+        commonViewModel.userDetail.observe(viewLifecycleOwner){
+            setActionBarSubTitle(it.name)
+        }
 
         return binding.root
     }
@@ -89,14 +68,13 @@ class FeedFragment : Fragment() {
             when (pos) {
                 0 -> tab.text = getString(R.string.posts)
                 1 -> tab.text = getString(R.string.events)
-                    //if (showingJobs) getString(R.string.jobs) else getString(R.string.events)
             }
         }.attach()
     }
 
-    private fun setActionBarSubTitle(subTitle: String? = null) {
+    private fun setActionBarSubTitle(title: String? = null) {
         val actionBar = (activity as AppCompatActivity).supportActionBar
-        actionBar?.subtitle = subTitle ?: ""
+        actionBar?.subtitle = title
     }
 
     override fun onResume() {
@@ -107,12 +85,8 @@ class FeedFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
+        setActionBarSubTitle(null)
         MenuState.setMenuState(MenuStates.HIDE_STATE)
         requireActivity().invalidateMenu()
-    }
-
-    companion object {
-        const val FILTER_BY_USER_ID = "FILTER_BY_USER_ID"
-
     }
 }

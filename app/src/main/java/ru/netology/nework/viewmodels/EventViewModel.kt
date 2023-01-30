@@ -1,27 +1,30 @@
 package ru.netology.nework.viewmodels
 
 import android.net.Uri
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.paging.*
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import ru.netology.nework.api.ApiService
-import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.models.FeedModelState
 import ru.netology.nework.models.MediaUpload
 import ru.netology.nework.models.PhotoModel
-import ru.netology.nework.models.Token
-import ru.netology.nework.models.event.*
-import ru.netology.nework.models.user.User
-import ru.netology.nework.repository.CommonRepository
+import ru.netology.nework.models.event.Event
+import ru.netology.nework.models.event.EventCreateRequest
+import ru.netology.nework.models.event.EventDataSource
+import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.repository.EventsRepository
 import ru.netology.nework.utils.SingleLiveEvent
 import java.io.File
 import javax.inject.Inject
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
 
 private val noPhoto = PhotoModel()
 
@@ -29,7 +32,6 @@ private val noPhoto = PhotoModel()
 class EventViewModel @Inject constructor(
     private val repository: EventsRepository,
     private val apiService: ApiService,
-    private val appAuth: AppAuth,
 ) : ViewModel() {
 
     val localDataFlow: Flow<PagingData<EventListItem>>
@@ -129,7 +131,7 @@ class EventViewModel @Inject constructor(
                             makeChanges(changingEvent)
                         }
                     }
-                    _dataState.value = FeedModelState(needRefresh = it.id == 0L)
+                    _dataState.value = FeedModelState(needRefresh = true)
                 } catch (e: Exception) {
                     _dataState.value = FeedModelState(
                         error = true,

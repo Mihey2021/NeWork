@@ -119,6 +119,9 @@ interface ApiService {
     @GET("{author_id}/wall/{id}/newer/")
     suspend fun getUserWallNewer(@Path("author_id") userId: Long, @Path("id") id: Long): Response<List<Post>>
 
+    @GET("{author_id}/wall/")
+    suspend fun getUserWall(@Path("author_id") userId: Long): Response<List<Post>>
+
     @GET("{author_id}/wall/{id}/before/")
     suspend fun getUserWallBefore(@Path("author_id") userId: Long, @Path("id") id: Long, @Query("count") count: Int): Response<List<Post>>
 

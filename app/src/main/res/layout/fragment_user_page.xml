@@ -23,15 +23,11 @@
             android:layout_height="wrap_content"
             android:text="@string/posts" />
 
+
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/events" />
-
-                <com.google.android.material.tabs.TabItem
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/jobs" />
+            android:text="@string/jobs" />
 
     </com.google.android.material.tabs.TabLayout>
 

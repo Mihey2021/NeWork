@@ -8,13 +8,12 @@ class UserPagePagerAdapter(
     fragmentActivity: UserPageFragment,
 ) : FragmentStateAdapter(fragmentActivity) {
     override fun getItemCount(): Int {
-        return 3
+        return 2
     }
 
     override fun createFragment(position: Int): Fragment {
         return when (position) {
             0 -> PostsFragment()
-            1 -> EventsFragment()
             else -> JobsFragment()
         }
     }

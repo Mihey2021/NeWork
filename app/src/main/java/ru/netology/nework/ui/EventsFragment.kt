@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -24,6 +23,7 @@ import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentEventsBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
+import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.event.EventListItem
@@ -32,30 +32,30 @@ import ru.netology.nework.utils.AdditionalFunctions
 import ru.netology.nework.utils.AdditionalFunctions.Companion.showErrorDialog
 import ru.netology.nework.viewmodels.AuthViewModel
 import ru.netology.nework.viewmodels.EventViewModel
-import ru.netology.nework.viewmodels.PostViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class EventsFragment : Fragment(R.layout.fragment_events) {
 
     private val viewModel: EventViewModel by activityViewModels()
-    private val postViewModel: PostViewModel by activityViewModels()
     private val authViewModel: AuthViewModel by activityViewModels()
 
     @Inject
     lateinit var appAuth: AppAuth
 
+    @Inject
+    lateinit var filters: Filters
+
     private var dialog: AlertDialog? = null
     private var authUser: User? = null
     private var filterBy: Long = 0L
+    private lateinit var binding: FragmentEventsBinding
     private lateinit var adapter: EventsAdapter
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        val binding = FragmentEventsBinding.inflate(inflater)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
+        binding = FragmentEventsBinding.inflate(layoutInflater)
 
         adapter = EventsAdapter(object : OnInteractionListener {
             override fun onEdit(event: DataItem) {
@@ -130,9 +130,16 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             }
 
             override fun onAvatarClick(authorId: Long) {
-                postViewModel.setFilterBy(authorId)
+                //postViewModel.setFilterBy(authorId)
+                filters.setFilterBy(authorId)
             }
         })
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
@@ -149,9 +156,11 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             }),
         )
 
-        postViewModel.filterBy.observe(viewLifecycleOwner) {
-            filterBy = it
-            setFabAddButtonVisibility(binding.fabEventAdd)
+        lifecycleScope.launch {
+            filters.filterBy.collectLatest { userId ->
+                filterBy = userId
+                setFabAddButtonVisibility(binding.fabEventAdd)
+            }
         }
 
         authViewModel.authData.observe(viewLifecycleOwner) {
@@ -161,7 +170,8 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
-            if (state.needRefresh) adapter.refresh()
+            if (state.needRefresh)
+                adapter.refresh()
             if (state.error) {
                 if (dialog?.isShowing == false || dialog == null) showErrorDialog(
                     requireContext(),
@@ -204,13 +214,13 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         }
 
         authViewModel.authData.observe(viewLifecycleOwner) {
-            if (it != null) authViewModel.getUserById(it.id) else setActionBarSubTitle()
+            //if (it != null) authViewModel.getUserById(it.id) else setActionBarSubTitle()
             adapter.refresh()
         }
 
         authViewModel.authUser.observe(viewLifecycleOwner) {
             authUser = it
-            setActionBarSubTitle(it?.name)
+            //setActionBarSubTitle(it?.name)
         }
 
         binding.swiperefresh.setOnRefreshListener {
@@ -247,7 +257,8 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
     private fun setListenersAndShowPopupMenu(popupMenu: PopupMenu) {
         popupMenu.setOnMenuItemClickListener {
-            postViewModel.setFilterBy(it.itemId.toLong())
+            //postViewModel.setFilterBy(it.itemId.toLong())
+            filters.setFilterBy(it.itemId.toLong())
             true
         }
         popupMenu.show()
@@ -268,10 +279,10 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         findNavController().navigate(direction)
     }
 
-    private fun setActionBarSubTitle(subTitle: String? = null) {
-        val actionBar = (activity as AppCompatActivity).supportActionBar
-        actionBar?.subtitle = subTitle ?: ""
-    }
+//    private fun setActionBarSubTitle(subTitle: String? = null) {
+//        val actionBar = (activity as AppCompatActivity).supportActionBar
+//        actionBar?.subtitle = subTitle ?: ""
+//    }
 
     private fun showAuthorizationQuestionDialog() {
         AppDialogs.getDialog(requireContext(),

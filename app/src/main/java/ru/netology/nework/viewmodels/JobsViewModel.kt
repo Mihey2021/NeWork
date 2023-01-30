@@ -1,9 +1,6 @@
 package ru.netology.nework.viewmodels
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import ru.netology.nework.auth.AppAuth
@@ -21,7 +18,7 @@ class JobsViewModel @Inject constructor(
     val authorized: Boolean
         get() = appAuth.authStateFlow.value?.token != null
 
-    private val _jobsData: MutableLiveData<List<Job>> = MutableLiveData(null)
+    private val _jobsData: MutableLiveData<List<Job>> = MutableLiveData()
     val jobsData: LiveData<List<Job>>
         get() = _jobsData
 
@@ -33,7 +30,7 @@ class JobsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _dataState.value = FeedModelState(loading = true)
-                _jobsData.value = repository.getMyJobs().sortedByDescending { it.start }
+                _jobsData.value = sortingList(repository.getMyJobs())
                 _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
@@ -45,7 +42,8 @@ class JobsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _dataState.value = FeedModelState(loading = true)
-                _jobsData.value = repository.getUserJobs(userId).sortedByDescending { it.start }
+                _jobsData.value =
+                    sortingList(repository.getUserJobs(userId))
                 _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
@@ -58,19 +56,37 @@ class JobsViewModel @Inject constructor(
             try {
                 _dataState.value = FeedModelState(loading = true)
                 val savedJob = repository.saveMyJob(job)
-                _dataState.value = FeedModelState(needRefresh = true)
+                if (job.id == 0L)
+                    _jobsData.value =
+                        sortingList(_jobsData.value?.plus(savedJob))
+                else
+                    _jobsData.value = sortingList(_jobsData.value?.map {
+                        if (it.id == savedJob.id) savedJob.copy(
+                            name = savedJob.name,
+                            position = savedJob.position,
+                            start = savedJob.start,
+                            finish = savedJob.finish,
+                            link = savedJob.link
+                        ) else it
+                    })
+
+                _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
 
+    private fun sortingList(list: List<Job>?) =
+        list?.sortedByDescending { job -> job.start }
+
     fun removeMyJobById(id: Long) {
         viewModelScope.launch {
             try {
                 _dataState.value = FeedModelState(loading = true)
                 repository.removeMyJobById(id)
-                _dataState.value = FeedModelState(needRefresh = true)
+                _jobsData.value = _jobsData.value?.filter { it.id != id }
+                _dataState.value = FeedModelState()
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
