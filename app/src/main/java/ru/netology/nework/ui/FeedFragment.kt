@@ -50,9 +50,10 @@ class FeedFragment : Fragment() {
 
         filters.setFilterBy(0L)
 
-        commonViewModel.getUserById(appAuth.getAuthorizedUserId())
+        val authId = appAuth.getAuthorizedUserId()
+        commonViewModel.getUserById(authId)
         commonViewModel.userDetail.observe(viewLifecycleOwner){
-            setActionBarSubTitle(it.name)
+            setActionBarSubTitle(if(authId == 0L) "" else it.name)
         }
 
         return binding.root

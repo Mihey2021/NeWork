@@ -133,6 +133,17 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                 //postViewModel.setFilterBy(authorId)
                 filters.setFilterBy(authorId)
             }
+
+            override fun onPhotoView(photoUrl: String) {
+                val direction =
+                    if (requireParentFragment() is FeedFragment)
+                        FeedFragmentDirections.actionFeedFragmentToViewPhotoFragment(photoUrl)
+                    else
+                        UserPageFragmentDirections.actionUserPageFragmentToViewPhotoFragment(
+                            photoUrl
+                        )
+                findNavController().navigate(direction)
+            }
         })
     }
 

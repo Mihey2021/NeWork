@@ -26,6 +26,9 @@
         <action
             android:id="@+id/action_feedFragment_to_mapFragment"
             app:destination="@id/mapFragment" />
+        <action
+            android:id="@+id/action_feedFragment_to_viewPhotoFragment"
+            app:destination="@id/viewPhotoFragment" />
     </fragment>
     <fragment
         android:id="@+id/registrationFragment"
@@ -121,6 +124,19 @@
         <action
             android:id="@+id/action_userPageFragment_to_mapFragment"
             app:destination="@id/mapFragment" />
+        <action
+            android:id="@+id/action_userPageFragment_to_viewPhotoFragment"
+            app:destination="@id/viewPhotoFragment" />
     </fragment>
     <action android:id="@+id/action_global_userPageFragment" app:destination="@id/userPageFragment" />
+    <fragment
+        android:id="@+id/viewPhotoFragment"
+        android:name="ru.netology.nework.ui.ViewPhotoFragment"
+        tools:layout="@layout/fragment_view_photo">
+        <argument
+            android:name="photoUrl"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
 </navigation>

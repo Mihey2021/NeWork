@@ -109,8 +109,18 @@ class PostsFragment : Fragment() {
             }
 
             override fun onAvatarClick(authorId: Long) {
-                //viewModel.setFilterBy(authorId)
                 findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${authorId}"))
+            }
+
+            override fun onPhotoView(photoUrl: String) {
+                val direction =
+                    if (requireParentFragment() is FeedFragment)
+                        FeedFragmentDirections.actionFeedFragmentToViewPhotoFragment(photoUrl)
+                    else
+                        UserPageFragmentDirections.actionUserPageFragmentToViewPhotoFragment(
+                            photoUrl
+                        )
+                findNavController().navigate(direction)
             }
 
         })
