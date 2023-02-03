@@ -159,7 +159,7 @@ class MapFragment : Fragment(R.layout.fragment_map), InputListener {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.access_to_geo))
             .setMessage(message)
-            .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
+            .setPositiveButton(getString(android.R.string.ok)) { dialog, _ ->
                 if (retry) requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 dialog.dismiss()
             }
