@@ -11,10 +11,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import okhttp3.MediaType
 import ru.netology.nework.api.ApiService
+import ru.netology.nework.errors.ErrorResponse
+import ru.netology.nework.models.AttachmentType
 import ru.netology.nework.models.FeedModelState
 import ru.netology.nework.models.MediaUpload
-import ru.netology.nework.models.PhotoModel
+import ru.netology.nework.models.MediaModel
 import ru.netology.nework.models.event.Event
 import ru.netology.nework.models.event.EventCreateRequest
 import ru.netology.nework.models.event.EventDataSource
@@ -26,7 +29,7 @@ import javax.inject.Inject
 import kotlin.collections.mutableMapOf
 import kotlin.collections.set
 
-private val noPhoto = PhotoModel()
+private val noMedia = MediaModel()
 
 @HiltViewModel
 class EventViewModel @Inject constructor(
@@ -61,9 +64,9 @@ class EventViewModel @Inject constructor(
     val eventCreated: LiveData<Unit>
         get() = _eventCreated
 
-    private val _photo = MutableLiveData(noPhoto)
-    val photo: LiveData<PhotoModel>
-        get() = _photo
+    private val _media = MutableLiveData(noMedia)
+    val media: LiveData<MediaModel>
+        get() = _media
 
     private fun merge(
         events: PagingData<Event>,
@@ -97,8 +100,10 @@ class EventViewModel @Inject constructor(
                 val changingEvent = repository.likeEventById(id, likeByMe)
                 makeChanges(changingEvent)
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
@@ -108,8 +113,9 @@ class EventViewModel @Inject constructor(
         localChangesFlow.value = OnChangeEvent(localChanges)
     }
 
-    fun changePhoto(uri: Uri?, file: File?) {
-        _photo.value = PhotoModel(uri, file)
+    fun changeMedia(uri: Uri?, file: File?, attachmentType: AttachmentType? = null, mediaType: MediaType? = null) {
+        if (file == null || attachmentType == null) return
+        _media.value = MediaModel(uri, Triple(file, attachmentType, mediaType))
     }
 
     fun edit(event: EventCreateRequest) {
@@ -118,20 +124,30 @@ class EventViewModel @Inject constructor(
 
     fun save() {
         edited.value?.let {
-            _eventCreated.value = Unit
             viewModelScope.launch {
                 try {
-                    when (_photo.value) {
-                        noPhoto -> {
+                    when (_media.value) {
+                        noMedia -> {
                             val changingEvent = repository.saveEvent(it)
                             makeChanges(changingEvent)
                         }
-                        else -> _photo.value?.file?.let { file ->
-                            val changingEvent = repository.saveWithAttachment(it, MediaUpload(file))
+                        else -> _media.value?.fileDescription?.let { fileDescription ->
+                            val changingEvent = repository.saveWithAttachment(
+                                it,
+                                MediaUpload(Triple(fileDescription.first!!, fileDescription.second, fileDescription.third))
+                            )
                             makeChanges(changingEvent)
                         }
                     }
+                    _eventCreated.value = Unit
+                    edited.value = null
+                    _media.value = noMedia
                     _dataState.value = FeedModelState(needRefresh = true)
+                } catch (e: ErrorResponse) {
+                    _dataState.value = FeedModelState(
+                        error = true,
+                        errorMessage = e.reason
+                    )
                 } catch (e: Exception) {
                     _dataState.value = FeedModelState(
                         error = true,
@@ -140,8 +156,6 @@ class EventViewModel @Inject constructor(
                 }
             }
         }
-        edited.value = null
-        _photo.value = noPhoto
     }
 
     fun removeById(id: Long) {
@@ -149,8 +163,10 @@ class EventViewModel @Inject constructor(
             try {
                 repository.removeEventById(id)
                 _dataState.value = FeedModelState(needRefresh = true)
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
@@ -161,8 +177,10 @@ class EventViewModel @Inject constructor(
                 val changingEvent = repository.removeParticipant(eventId)
                 makeChanges(changingEvent)
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
@@ -173,11 +191,18 @@ class EventViewModel @Inject constructor(
                 val changingEvent = repository.setParticipant(eventId)
                 makeChanges(changingEvent)
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
+
+    fun clearFeedModelState() {
+        _dataState.value = FeedModelState()
+    }
+
 }
 
 class OnChangeEvent<T>(val value: T)

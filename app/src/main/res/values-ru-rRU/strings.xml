@@ -11,7 +11,6 @@
     <string name="enter_your_username">Укажите логин</string>
     <string name="enter_the_password">Укажите пароль</string>
     <string name="an_error_has_occurred">Произошла ошибка</string>
-    <string name="ok_text">Ok</string>
     <string name="cancel_text">Отмена</string>
     <string name="authorization">Авторизация</string>
     <string name="registration_text">Регистрация</string>
@@ -49,7 +48,6 @@
     <string name="err_current_geo">Не удалось получить текущее местоположение: Проверьте доступ к геолокации на устройстве</string>
     <string name="request_permission_geo_rationale">Пожалуйста, предоставьте доступ к геолокации чтобы мы могли сделать использование приложения удобным для Вас</string>
     <string name="access_to_geo">Доступ к геолокации</string>
-    <string name="ok">Ok</string>
     <string name="check_geo_permission">Проверьте разрешение на доступ к геолокации</string>
     <string name="set_location">Установить место</string>
     <string name="location">Местоположение</string>
@@ -81,4 +79,10 @@
     <string name="make_sure_required_fields_filled">Убедитесь, что все обязательные поля заполнены</string>
     <string name="required_field_tag">*</string>
     <string name="content">Контент</string>
+    <string name="pick_photo">Выбрать фото</string>
+    <string name="pick_video">Выбрать видео</string>
+    <string name="error_network">Произошла ошибка сети</string>
+    <string name="error_unknown">Произошла неизвестная ошибка</string>
+    <string name="error_empty_response">Сервер вернул пустой ответ</string>
+    <string name="pick_audio">Выбрать аудиозапись</string>
 </resources>

@@ -2,14 +2,18 @@ package ru.netology.nework.ui
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.text.format.DateFormat
 import android.view.*
+import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toFile
 import androidx.core.view.MenuProvider
@@ -28,6 +32,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import dagger.hilt.android.AndroidEntryPoint
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import ru.netology.nework.R
 import ru.netology.nework.adapters.ArrayWithImageAdapter
 import ru.netology.nework.auth.AppAuth
@@ -50,6 +55,7 @@ import ru.netology.nework.utils.AndroidUtils
 import ru.netology.nework.utils.getSerializable
 import ru.netology.nework.viewmodels.EventViewModel
 import ru.netology.nework.viewmodels.PostViewModel
+import java.io.File
 import java.util.*
 import javax.inject.Inject
 
@@ -57,13 +63,15 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
-    private val postViewModel: PostViewModel by activityViewModels()
+    private val postViewModel: PostViewModel by activityViewModels()//viewModels()
     private val eventViewModel: EventViewModel by activityViewModels()
 
     @Inject
     lateinit var appAuth: AppAuth
 
     private lateinit var fragmentBinding: FragmentNewPostBinding
+
+    private var dialog: AlertDialog? = null
 
     private var data: DataItem? = null
 
@@ -122,11 +130,29 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                         ).show()
                     }
                     Activity.RESULT_OK -> {
-                        val uri: Uri? = it.data?.data
+                        val uri: Uri = it.data?.data ?: return@registerForActivityResult
+                        val file = uri.toFile()
+                        val mediaType = "image/${
+                            MimeTypeMap.getFileExtensionFromUrl(
+                                Uri.fromFile(file).toString()
+                            )
+                        }".toMediaTypeOrNull()
+                        //requireContext().contentResolver.getType(uri)?.toMediaTypeOrNull()
+                        println("MT: ${requireContext().contentResolver.getType(uri)}")
                         if (data is EventListItem || isNewEvent) {
-                            eventViewModel.changePhoto(uri, uri?.toFile())
+                            eventViewModel.changeMedia(
+                                uri,
+                                file,
+                                AttachmentType.IMAGE,
+                                mediaType
+                            )
                         } else {
-                            postViewModel.changePhoto(uri, uri?.toFile())
+                            postViewModel.changeMedia(
+                                uri,
+                                file,
+                                AttachmentType.IMAGE,
+                                mediaType
+                            )
                         }
                     }
                 }
@@ -157,9 +183,9 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         binding.removePhoto.setOnClickListener {
             if (data == null) {
                 if (isNewPost)
-                    postViewModel.changePhoto(null, null)
+                    postViewModel.changeMedia(null, null)
                 else
-                    eventViewModel.changePhoto(null, null)
+                    eventViewModel.changeMedia(null, null)
                 return@setOnClickListener
             }
             fragmentBinding.photoContainer.visibility = View.GONE
@@ -173,24 +199,114 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
         }
 
+        val pickVideoLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                try {
+                    when (it.resultCode) {
+                        Activity.RESULT_CANCELED -> {
+                            return@registerForActivityResult
+                        }
+                        Activity.RESULT_OK -> {
+                            //val uri: Uri = getPath(it.data?.data) ?: return@registerForActivityResult
+                            val uri: Uri = it.data?.data ?: return@registerForActivityResult
+                            val mediaType =
+                                requireContext().contentResolver.getType(uri)?.toMediaTypeOrNull()
+                            if (data is EventListItem || isNewEvent) {
+                                eventViewModel.changeMedia(
+                                    uri,
+                                    getFile(uri),
+                                    AttachmentType.VIDEO,
+                                    mediaType
+                                )
+                            } else {
+                                //postViewModel.changeMedia(uri, uri?.toFile(), AttachmentType.VIDEO)
+                                postViewModel.changeMedia(
+                                    uri,
+                                    getFile(uri),
+                                    AttachmentType.VIDEO,
+                                    mediaType
+                                )
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    showStateDialogs(FeedModelState(errorMessage = e.message))
+                }
+            }
+
+        binding.pickVideo.setOnClickListener {
+            val intent = Intent(
+                Intent.ACTION_PICK,
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            )
+            pickVideoLauncher.launch(Intent.createChooser(intent, requireContext().getString(R.string.pick_video)))
+        }
+
+        val pickAudioLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                try {
+                    when (it.resultCode) {
+                        Activity.RESULT_CANCELED -> {
+                            return@registerForActivityResult
+                        }
+                        Activity.RESULT_OK -> {
+                            val uri: Uri = it.data?.data ?: return@registerForActivityResult
+                            val mediaType =
+                                requireContext().contentResolver.getType(uri)?.toMediaTypeOrNull()
+                            if (data is EventListItem || isNewEvent) {
+                                eventViewModel.changeMedia(
+                                    uri,
+                                    getFile(uri, isVideo = false),
+                                    AttachmentType.AUDIO,
+                                    mediaType
+                                )
+                            } else {
+                                postViewModel.changeMedia(
+                                    uri,
+                                    getFile(uri, isVideo = false),
+                                    AttachmentType.AUDIO,
+                                    mediaType
+                                )
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    showStateDialogs(FeedModelState(errorMessage = e.message))
+                }
+            }
+
+        binding.pickAudio.setOnClickListener {
+            val intent = Intent(
+                Intent.ACTION_PICK,
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            )
+            pickAudioLauncher.launch(Intent.createChooser(intent, requireContext().getString(R.string.pick_audio)))
+        }
+
         binding.coordinatesText.setOnClickListener {
             openMapFragment()
         }
 
         if (data is PostListItem || isNewPost) {
+            postViewModel.dataState.observe(viewLifecycleOwner) {
+                showStateDialogs(it)
+            }
             postViewModel.postCreated.observe(viewLifecycleOwner) {
                 findNavController().navigateUp()
             }
         }
 
         if (data is EventListItem || isNewEvent) {
+            eventViewModel.dataState.observe(viewLifecycleOwner) {
+                showStateDialogs(it)
+            }
             eventViewModel.eventCreated.observe(viewLifecycleOwner) {
                 findNavController().navigateUp()
             }
         }
 
         if (data is PostListItem || isNewPost) {
-            postViewModel.photo.observe(viewLifecycleOwner) {
+            postViewModel.media.observe(viewLifecycleOwner) {
                 if (it.uri == null && data?.attachment == null) {
                     binding.photoContainer.visibility = View.GONE
                     return@observe
@@ -201,7 +317,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         }
 
         if (data is EventListItem || isNewEvent) {
-            eventViewModel.photo.observe(viewLifecycleOwner) {
+            eventViewModel.media.observe(viewLifecycleOwner) {
                 if (it.uri == null && data?.attachment == null) {
                     binding.photoContainer.visibility = View.GONE
                     return@observe
@@ -281,8 +397,95 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         return binding.root
     }
 
+    private fun showStateDialogs(feedModel: FeedModelState) {
+        dialog?.dismiss()
+
+        if (feedModel.loading) {
+            dialog = AppDialogs.getDialog(
+                requireContext(),
+                AppDialogs.PROGRESS_DIALOG,
+                title = getString(R.string.save)
+            )
+        }
+
+        if (feedModel.error) {
+            dialog = AppDialogs.getDialog(
+                requireContext(),
+                AppDialogs.ERROR_DIALOG,
+                title = getString(R.string.an_error_has_occurred),
+                message = feedModel.errorMessage ?: getString(R.string.an_error_has_occurred),
+                titleIcon = R.drawable.ic_baseline_error_24,
+                isCancelable = true
+            )
+        }
+    }
+
+    private fun getFile(uri: Uri?, isVideo: Boolean = true): File? {
+
+        val projection = if (isVideo)
+            arrayOf(MediaStore.Video.Media.DATA)
+        else
+            arrayOf(MediaStore.Audio.Media.DATA)
+
+        val cursor = requireContext().contentResolver.query(uri!!, projection, null, null, null)
+        return if (cursor != null) {
+            cursor.moveToFirst()
+            val idColumn = cursor
+                .getColumnIndex(MediaStore.Video.Media.DATA)
+
+            val path = cursor.getString(idColumn)
+            cursor.close()
+            File(path)
+
+        } else
+            null
+//        return if (cursor != null) {
+//            val idColumn = cursor
+//                .getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
+//            cursor.moveToFirst()
+//            ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, cursor.getLong(idColumn))
+//        } else
+//            null
+    }
+
+//    fun File.copyInputStreamToFile(inputStream: InputStream) {
+//        val fileType: String? = requireContext().contentResolver.getType(contentUri)
+//        val fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(fileType)
+//        val fileName = "temp_file" + if (fileExtension != null) ".$fileExtension" else ""
+//        this.outputStream().use { fileOut ->
+//            inputStream.copyTo(fileOut)
+//        }
+//    }
+
+//    @RequiresApi(Build.VERSION_CODES.Q)
+//    private fun getFileFromContentUri(contentUri: Uri): File {
+//        // Preparing Temp file name
+//        val fileType: String? = requireContext().contentResolver.getType(contentUri)
+//        val fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(fileType)
+//        val fileName = "temp_file" + if (fileExtension != null) ".$fileExtension" else ""
+//
+//        // Creating Temp file
+//        val tempFile = File(requireContext().cacheDir, fileName)
+//        tempFile.createNewFile()
+//
+//        try {
+//            val oStream = FileOutputStream(tempFile)
+//            val inputStream = requireContext().contentResolver.openInputStream(contentUri)
+//
+//            inputStream?.let {
+//                copy(inputStream, oStream)
+//            }
+//
+//            oStream.flush()
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
+//
+//        return tempFile
+//    }
+
     private fun validateForm(): Boolean {
-        var valid = !fragmentBinding.content.text.isNullOrBlank()
+        val valid = !fragmentBinding.content.text.isNullOrBlank()
 
         if (!valid) {
             showErrorDialog(
@@ -570,7 +773,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         datePicker.addOnPositiveButtonClickListener {
             val date = Date(it)
             fragmentBinding.eventDateText.setText(
-                AdditionalFunctions.getFormattedDateTimeToString(
+                getFormattedDateTimeToString(
                     date,
                     "dd.MM.yyyy"
                 )

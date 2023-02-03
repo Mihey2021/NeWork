@@ -146,6 +146,8 @@ class PostsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
+        viewModel.clearFeedModelState()
+
         lifecycleScope.launch {
             filters.filterBy.collectLatest { userId ->
                 filterBy = userId

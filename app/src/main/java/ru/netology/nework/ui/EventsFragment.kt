@@ -152,6 +152,8 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         savedInstanceState: Bundle?
     ): View {
 
+        viewModel.clearFeedModelState()
+
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
                 DataLoadingStateAdapter.OnInteractionListener {

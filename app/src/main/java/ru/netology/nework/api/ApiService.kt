@@ -99,7 +99,7 @@ interface ApiService {
 
     @Multipart
     @POST("media")
-    suspend fun upload(@Part media: MultipartBody.Part): Response<Media>
+    suspend fun media(@Part media: MultipartBody.Part): Response<Media>
 
     @DELETE("posts/{id}")
     suspend fun removeById(@Path("id") id: Long): Response<Unit>

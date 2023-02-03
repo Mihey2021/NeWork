@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import okhttp3.MediaType
 import ru.netology.nework.api.ApiService
 import ru.netology.nework.auth.AppAuth
+import ru.netology.nework.errors.ErrorResponse
 import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.*
 import ru.netology.nework.models.post.Post
@@ -24,7 +26,7 @@ import ru.netology.nework.utils.SingleLiveEvent
 import java.io.File
 import javax.inject.Inject
 
-private val noPhoto = PhotoModel()
+private val noMedia = MediaModel()
 const val PAGE_SIZE = 3
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -69,9 +71,9 @@ class PostViewModel @Inject constructor(
     val postCreated: LiveData<Unit>
         get() = _postCreated
 
-    private val _photo = MutableLiveData(noPhoto)
-    val photo: LiveData<PhotoModel>
-        get() = _photo
+    private val _media = MutableLiveData(noMedia)
+    val media: LiveData<MediaModel>
+        get() = _media
 
     private fun merge(
         posts: PagingData<Post>,
@@ -104,8 +106,10 @@ class PostViewModel @Inject constructor(
                 val changingPost = repository.likeById(id, likeByMe)
                 makeChanges(changingPost)
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
@@ -115,8 +119,9 @@ class PostViewModel @Inject constructor(
         localChangesFlow.value = OnChange(localChanges)
     }
 
-    fun changePhoto(uri: Uri?, file: File?) {
-        _photo.value = PhotoModel(uri, file)
+    fun changeMedia(uri: Uri?, file: File?, attachmentType: AttachmentType? = null, mediaType: MediaType? = null) {
+        if (file == null || attachmentType == null) return
+        _media.value = MediaModel(uri, Triple(file, attachmentType, mediaType))
     }
 
     fun edit(post: PostCreateRequest) {
@@ -125,20 +130,31 @@ class PostViewModel @Inject constructor(
 
     fun save() {
         edited.value?.let {
-            _postCreated.value = Unit
+            _dataState.value = FeedModelState(loading = true)
             viewModelScope.launch {
                 try {
-                    when (_photo.value) {
-                        noPhoto -> {
+                    when (_media.value) {
+                        noMedia -> {
                             val changingPost = repository.save(it)
                             makeChanges(changingPost)
                         }
-                        else -> _photo.value?.file?.let { file ->
-                            val changingPost = repository.saveWithAttachment(it, MediaUpload(file))
+                        else -> _media.value?.fileDescription?.let { fileDescription ->
+                            val changingPost = repository.saveWithAttachment(
+                                it,
+                                MediaUpload(Triple(fileDescription.first!!, fileDescription.second, fileDescription.third))
+                            )
                             makeChanges(changingPost)
                         }
                     }
+                    _postCreated.value = Unit
+                    edited.value = null
+                    _media.value = noMedia
                     _dataState.value = FeedModelState(needRefresh = it.id == 0L)
+                } catch (e: ErrorResponse) {
+                    _dataState.value = FeedModelState(
+                        error = true,
+                        errorMessage = e.reason
+                    )
                 } catch (e: Exception) {
                     _dataState.value = FeedModelState(
                         error = true,
@@ -147,8 +163,6 @@ class PostViewModel @Inject constructor(
                 }
             }
         }
-        edited.value = null
-        _photo.value = noPhoto
     }
 
     fun removeById(id: Long) {
@@ -156,11 +170,18 @@ class PostViewModel @Inject constructor(
             try {
                 repository.removeById(id)
                 _dataState.value = FeedModelState(needRefresh = true)
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
+
+    fun clearFeedModelState() {
+        _dataState.value = FeedModelState()
+    }
+
 }
 
 class OnChange<T>(val value: T)

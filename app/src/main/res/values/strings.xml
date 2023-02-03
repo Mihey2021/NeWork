@@ -10,7 +10,6 @@
     <string name="enter_your_username">Enter your username</string>
     <string name="enter_the_password">Enter the password</string>
     <string name="an_error_has_occurred">An error has occurred</string>
-    <string name="ok_text">Ok</string>
     <string name="cancel_text">Cancel</string>
     <string name="authorization">Authorization</string>
     <string name="registration_text">Registration</string>
@@ -48,7 +47,6 @@
     <string name="err_current_geo">Couldn\'t get the current location: Check the geolocation access on the device</string>
     <string name="request_permission_geo_rationale">Please provide access to geolocation so that we can make the use of the application convenient for you</string>
     <string name="access_to_geo">Access to geolocation</string>
-    <string name="ok">Ok</string>
     <string name="check_geo_permission">Check the permission to access geolocation</string>
     <string name="set_location">Set location</string>
     <string name="location">Location</string>
@@ -80,4 +78,10 @@
     <string name="make_sure_required_fields_filled">Make sure that all required fields are filled in</string>
     <string name="required_field_tag">*</string>
     <string name="content">Content</string>
+    <string name="pick_photo">Pick photo</string>
+    <string name="pick_video">Pick video</string>
+    <string name="error_network">A network error has occurred</string>
+    <string name="error_unknown">An unknown error has occurred</string>
+    <string name="error_empty_response">The server returned an empty response</string>
+    <string name="pick_audio">Pick an audio recording</string>
 </resources>

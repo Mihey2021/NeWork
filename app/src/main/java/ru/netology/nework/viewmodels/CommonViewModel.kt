@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import ru.netology.nework.errors.ErrorResponse
 import ru.netology.nework.models.FeedModelState
 import ru.netology.nework.models.user.User
 import ru.netology.nework.repository.CommonRepository
@@ -35,8 +36,10 @@ class CommonViewModel @Inject constructor(
                 val usersList = repository.getAllUsers()
                 _usersList.value = usersList
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }
@@ -48,8 +51,10 @@ class CommonViewModel @Inject constructor(
                 val user = repository.getUserById(id)
                 _userDetail.value = user
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
-                _dataState.value = FeedModelState(error = true)
+                _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
         }
     }

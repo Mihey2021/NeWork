@@ -306,9 +306,27 @@
             style="@style/Widget.NeWorkTheme.IconButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="@string/description_take_photo"
+            android:contentDescription="@string/pick_photo"
             android:padding="@dimen/common_spacing"
             app:icon="@drawable/ic_camera_24dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/pickVideo"
+            style="@style/Widget.NeWorkTheme.IconButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/pick_video"
+            android:padding="@dimen/common_spacing"
+            app:icon="@drawable/ic_baseline_video_file_24" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/pickAudio"
+            style="@style/Widget.NeWorkTheme.IconButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/pick_audio"
+            android:padding="@dimen/common_spacing"
+            app:icon="@drawable/ic_baseline_audio_file_24" />
     </LinearLayout>
 
 

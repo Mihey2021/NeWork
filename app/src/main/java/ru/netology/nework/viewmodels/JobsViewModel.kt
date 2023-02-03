@@ -4,6 +4,7 @@ import androidx.lifecycle.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import ru.netology.nework.auth.AppAuth
+import ru.netology.nework.errors.ErrorResponse
 import ru.netology.nework.models.FeedModelState
 import ru.netology.nework.models.jobs.Job
 import ru.netology.nework.repository.JobsRepository
@@ -32,6 +33,8 @@ class JobsViewModel @Inject constructor(
                 _dataState.value = FeedModelState(loading = true)
                 _jobsData.value = sortingList(repository.getMyJobs())
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
@@ -45,6 +48,8 @@ class JobsViewModel @Inject constructor(
                 _jobsData.value =
                     sortingList(repository.getUserJobs(userId))
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
@@ -71,6 +76,8 @@ class JobsViewModel @Inject constructor(
                     })
 
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }
@@ -87,6 +94,8 @@ class JobsViewModel @Inject constructor(
                 repository.removeMyJobById(id)
                 _jobsData.value = _jobsData.value?.filter { it.id != id }
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
             }

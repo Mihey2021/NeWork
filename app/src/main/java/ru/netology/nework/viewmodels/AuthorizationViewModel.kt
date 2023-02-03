@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import ru.netology.nework.errors.ErrorResponse
 import ru.netology.nework.models.FeedModelState
 import ru.netology.nework.models.Token
 import ru.netology.nework.repository.AuthAndRegisterRepository
@@ -31,6 +32,9 @@ class AuthorizationViewModel @Inject constructor(
                 _dataState.value = FeedModelState(loading = true)
                 _authorizationData.value = repository.authentication(login, pass)
                 _dataState.value = FeedModelState()
+            } catch (e: ErrorResponse) {
+                _authorizationData.value = null
+                _dataState.value = FeedModelState(error = true, errorMessage = e.reason)
             } catch (e: Exception) {
                 _authorizationData.value = null
                 _dataState.value = FeedModelState(error = true, errorMessage = e.message)
