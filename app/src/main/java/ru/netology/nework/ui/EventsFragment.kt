@@ -21,6 +21,7 @@ import ru.netology.nework.adapters.DataLoadingStateAdapter
 import ru.netology.nework.adapters.EventsAdapter
 import ru.netology.nework.adapters.OnInteractionListener
 import ru.netology.nework.auth.AppAuth
+import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.FragmentEventsBinding
 import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.dialogs.AppDialogs
@@ -140,7 +141,7 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                 findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${authorId}"))
             }
 
-            override fun onPlayStopAudio(dataItem: DataItem, binding: PostCardBinding) {
+            override fun onPlayStopAudio(dataItem: DataItem, binding: AudioPlayerBinding) {
                 audioPlayer.playStopAudio(dataItem, binding)
             }
 

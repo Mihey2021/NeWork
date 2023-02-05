@@ -129,24 +129,24 @@
             app:layout_constraintStart_toEndOf="@id/iconType"
             app:layout_constraintTop_toBottomOf="@id/content" />
 
-        <androidx.constraintlayout.widget.Group
-            android:id="@+id/audioPlayerGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:constraint_referenced_ids="audioPlayerInclude"
-            android:visibility="gone"
-            tools:visibility="visible"/>
-
-        <include
-            android:id="@+id/audioPlayerInclude"
-            layout="@layout/audio_player"
+        <FrameLayout
+            android:id="@+id/audioPlayerContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/common_spacing"
             app:layout_constraintBottom_toTopOf="@id/attachmentImageView"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/eventDate" />
+            app:layout_constraintTop_toBottomOf="@id/eventDate"
+            android:layout_marginTop="@dimen/common_spacing"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <include
+                android:id="@+id/audioPlayerInclude"
+                layout="@layout/audio_player"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </FrameLayout>
 
         <ImageView
             android:id="@+id/attachmentImageView"
@@ -159,7 +159,7 @@
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/audioPlayerInclude"
+            app:layout_constraintTop_toBottomOf="@id/audioPlayerContainer"
             tools:srcCompat="@tools:sample/avatars" />
 
         <TextView
@@ -244,7 +244,7 @@
             app:icon="@drawable/ic_baseline_peoples_24"
             app:layout_constraintStart_toEndOf="@+id/speakers"
             app:layout_constraintTop_toBottomOf="@id/footer"
-            tools:text="@sample/post.json/data/mention"/>
+            tools:text="@sample/post.json/data/mention" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

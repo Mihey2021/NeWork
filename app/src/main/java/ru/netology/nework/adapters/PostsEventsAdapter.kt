@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import ru.netology.nework.R
+import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.extensions.loadCircleCrop
 import ru.netology.nework.extensions.loadFromResource
@@ -33,7 +34,7 @@ interface OnInteractionListener {
     fun onPhotoView(photoUrl: String) {}
     fun onCoordinatesClick(coordinates: Coordinates) {}
     fun onAvatarClick(authorId: Long) {}
-    fun onPlayStopAudio(dataItem: DataItem, binding: PostCardBinding) {}
+    fun onPlayStopAudio(dataItem: DataItem, binding: AudioPlayerBinding) {}
 }
 
 class PostsAdapter @Inject constructor(
@@ -107,7 +108,7 @@ class ViewHolder @Inject constructor(
 
             menu.isVisible = dataItem.ownedByMe
 
-            audioPlayerGroup.visibility = View.GONE
+            audioPlayerContainer.visibility = View.GONE
             attachmentImageView.visibility = View.GONE
             val playing = dataItem.isAudioPlayed
             audioPlayerInclude.playStop.isChecked = playing
@@ -117,7 +118,7 @@ class ViewHolder @Inject constructor(
                 audioPlayerInclude.seekBar.max = 0
                 audioPlayerInclude.seekBar.progress = 0
             } else {
-                audioPlayer.refreshSeekBar(binding)
+                audioPlayer.refreshSeekBar(binding.audioPlayerInclude)
             }
 
             val attachment = dataItem.attachment
@@ -138,9 +139,9 @@ class ViewHolder @Inject constructor(
                         }
                     }
                     AttachmentType.AUDIO -> {
-                        audioPlayerGroup.visibility = View.VISIBLE
+                        audioPlayerContainer.visibility = View.VISIBLE
                         audioPlayerInclude.playStop.setOnClickListener {
-                            onInteractionListener.onPlayStopAudio(dataItem, binding)
+                            onInteractionListener.onPlayStopAudio(dataItem, binding.audioPlayerInclude)
                         }
                     }
                     else -> {

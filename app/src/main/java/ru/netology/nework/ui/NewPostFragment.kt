@@ -69,7 +69,10 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     @Inject
     lateinit var appAuth: AppAuth
 
-    private lateinit var fragmentBinding: FragmentNewPostBinding
+    @Inject
+    lateinit var audioPlayer: AudioPlayer
+
+    private lateinit var binding: FragmentNewPostBinding
 
     private var dialog: AlertDialog? = null
 
@@ -94,12 +97,11 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val binding = FragmentNewPostBinding.inflate(
+        binding = FragmentNewPostBinding.inflate(
             inflater,
             container,
             false
         )
-        fragmentBinding = binding
 
         data = args.editingData
         isNewPost = args.isNewPost
@@ -119,6 +121,9 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         setActionBarTitle(data != null)
         binding.content.requestFocus()
 
+        setAttachmentVisibility(data?.attachment?.type)
+
+
         val pickPhotoLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 when (it.resultCode) {
@@ -137,8 +142,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                                 Uri.fromFile(file).toString()
                             )
                         }".toMediaTypeOrNull()
-                        //requireContext().contentResolver.getType(uri)?.toMediaTypeOrNull()
-                        println("MT: ${requireContext().contentResolver.getType(uri)}")
+
                         if (data is EventListItem || isNewEvent) {
                             eventViewModel.changeMedia(
                                 uri,
@@ -156,6 +160,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                         }
                     }
                 }
+                setAttachmentVisibility(AttachmentType.IMAGE)
             }
 
         binding.pickPhoto.setOnClickListener {
@@ -188,7 +193,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     eventViewModel.changeMedia(null, null)
                 return@setOnClickListener
             }
-            fragmentBinding.photoContainer.visibility = View.GONE
+            binding.photoContainer.visibility = View.GONE
             data = if (data is PostListItem) {
                 val currentData = data as PostListItem
                 currentData.copy(post = currentData.post.copy(attachment = null))
@@ -229,6 +234,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                             }
                         }
                     }
+                    setAttachmentVisibility(AttachmentType.VIDEO)
                 } catch (e: Exception) {
                     showStateDialogs(FeedModelState(errorMessage = e.message))
                 }
@@ -239,7 +245,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 Intent.ACTION_PICK,
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI
             )
-            pickVideoLauncher.launch(Intent.createChooser(intent, requireContext().getString(R.string.pick_video)))
+            pickVideoLauncher.launch(
+                Intent.createChooser(
+                    intent,
+                    requireContext().getString(R.string.pick_video)
+                )
+            )
         }
 
         val pickAudioLauncher =
@@ -253,21 +264,23 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                             val uri: Uri = it.data?.data ?: return@registerForActivityResult
                             val mediaType =
                                 requireContext().contentResolver.getType(uri)?.toMediaTypeOrNull()
+                            val file = getFile(uri, isVideo = false)
                             if (data is EventListItem || isNewEvent) {
                                 eventViewModel.changeMedia(
                                     uri,
-                                    getFile(uri, isVideo = false),
+                                    file,
                                     AttachmentType.AUDIO,
                                     mediaType
                                 )
                             } else {
                                 postViewModel.changeMedia(
                                     uri,
-                                    getFile(uri, isVideo = false),
+                                    file,
                                     AttachmentType.AUDIO,
                                     mediaType
                                 )
                             }
+                            setAttachmentVisibility(AttachmentType.AUDIO, file?.absolutePath)
                         }
                     }
                 } catch (e: Exception) {
@@ -280,7 +293,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 Intent.ACTION_PICK,
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
             )
-            pickAudioLauncher.launch(Intent.createChooser(intent, requireContext().getString(R.string.pick_audio)))
+            pickAudioLauncher.launch(
+                Intent.createChooser(
+                    intent,
+                    requireContext().getString(R.string.pick_audio)
+                )
+            )
         }
 
         binding.coordinatesText.setOnClickListener {
@@ -336,7 +354,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 when (menuItem.itemId) {
                     R.id.save -> {
                         if (validateForm()) {
-                            fragmentBinding.let {
+                            binding.let {
                                 if (data is PostListItem || isNewPost) {
                                     saveInPostViewModel(
                                         viewModel = postViewModel,
@@ -397,6 +415,32 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         return binding.root
     }
 
+    private fun setAttachmentVisibility(attachment: AttachmentType?, path: String? = null) {
+
+        if (attachment == null) {
+            binding.photoContainer.visibility = View.GONE
+            binding.audioPlayerContainer.visibility = View.GONE
+            return
+        }
+
+        when (attachment) {
+            AttachmentType.IMAGE -> {
+                binding.photoContainer.visibility = View.VISIBLE
+                binding.audioPlayerContainer.visibility = View.GONE
+            }
+            AttachmentType.AUDIO -> {
+                binding.audioPlayerContainer.visibility = View.VISIBLE
+                binding.photoContainer.visibility = View.GONE
+                binding.audioPlayerInclude.playStop.setOnClickListener {
+                    playStopAudioPlayer(path)
+                }
+            }
+            else -> {
+                Unit
+            }
+        }
+    }
+
     private fun showStateDialogs(feedModel: FeedModelState) {
         dialog?.dismiss()
 
@@ -439,53 +483,10 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
         } else
             null
-//        return if (cursor != null) {
-//            val idColumn = cursor
-//                .getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
-//            cursor.moveToFirst()
-//            ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, cursor.getLong(idColumn))
-//        } else
-//            null
     }
 
-//    fun File.copyInputStreamToFile(inputStream: InputStream) {
-//        val fileType: String? = requireContext().contentResolver.getType(contentUri)
-//        val fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(fileType)
-//        val fileName = "temp_file" + if (fileExtension != null) ".$fileExtension" else ""
-//        this.outputStream().use { fileOut ->
-//            inputStream.copyTo(fileOut)
-//        }
-//    }
-
-//    @RequiresApi(Build.VERSION_CODES.Q)
-//    private fun getFileFromContentUri(contentUri: Uri): File {
-//        // Preparing Temp file name
-//        val fileType: String? = requireContext().contentResolver.getType(contentUri)
-//        val fileExtension = MimeTypeMap.getSingleton().getExtensionFromMimeType(fileType)
-//        val fileName = "temp_file" + if (fileExtension != null) ".$fileExtension" else ""
-//
-//        // Creating Temp file
-//        val tempFile = File(requireContext().cacheDir, fileName)
-//        tempFile.createNewFile()
-//
-//        try {
-//            val oStream = FileOutputStream(tempFile)
-//            val inputStream = requireContext().contentResolver.openInputStream(contentUri)
-//
-//            inputStream?.let {
-//                copy(inputStream, oStream)
-//            }
-//
-//            oStream.flush()
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//        }
-//
-//        return tempFile
-//    }
-
     private fun validateForm(): Boolean {
-        val valid = !fragmentBinding.content.text.isNullOrBlank()
+        val valid = !binding.content.text.isNullOrBlank()
 
         if (!valid) {
             showErrorDialog(
@@ -499,9 +500,9 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private fun updateMentionUsersText(checkedUsers: UsersSelected) {
         if (data is PostListItem) {
-            fragmentBinding.mentionUsersText.setText(getStringUserList(checkedUsers.users))
+            binding.mentionUsersText.setText(getStringUserList(checkedUsers.users))
         } else {
-            fragmentBinding.speakersText.setText(getStringUserList(checkedUsers.users))
+            binding.speakersText.setText(getStringUserList(checkedUsers.users))
 
         }
     }
@@ -527,13 +528,17 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("SimpleDateFormat")
-    private fun saveInEventViewModel(viewModel: EventViewModel, content: String, link: String?) {
+    private fun saveInEventViewModel(
+        viewModel: EventViewModel,
+        content: String,
+        link: String?
+    ) {
         val date = AdditionalFunctions.getFormattedStringDateTime(
-            fragmentBinding.eventDateText.text.toString(),
+            binding.eventDateText.text.toString(),
             "dd.MM.yyyy",
             "yyyy-MM-dd"
         )
-        val time = "${fragmentBinding.eventTimeText.text.toString()}:01"
+        val time = "${binding.eventTimeText.text.toString()}:01"
         val eventDate = AdditionalFunctions.getFormattedStringDateTime(
             stringDateTime = "$date $time",
             pattern = "yyyy-MM-dd HH:mm:ss",
@@ -570,7 +575,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun updateCoordinatesText(coordinates: Coordinates?) {
-        fragmentBinding.coordinatesText.setText(
+        binding.coordinatesText.setText(
             coordinates?.toString() ?: ""
         )
     }
@@ -582,9 +587,9 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun initUi(data: DataItem?) {
-        fragmentBinding.contentLayout.hint = setFieldRequiredHint(fragmentBinding.contentLayout)
+        binding.contentLayout.hint = setFieldRequiredHint(binding.contentLayout)
         if (data is EventListItem || isNewEvent) {
-            with(fragmentBinding) {
+            with(binding) {
                 eventDateLayout.hint = setFieldRequiredHint(eventDateLayout)
                 eventTimeLayout.hint = setFieldRequiredHint(eventTimeLayout)
                 eventDateLayout.visibility = View.VISIBLE
@@ -659,7 +664,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 mentionUsersLayout.visibility = View.GONE
             }
         } else {
-            with(fragmentBinding) {
+            with(binding) {
                 eventDateLayout.visibility = View.GONE
                 eventTimeLayout.visibility = View.GONE
                 eventTypeLayout.visibility = View.GONE
@@ -684,12 +689,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         }
         val attachment = data.attachment
         updateCoordinatesText(data.coords)
-        with(fragmentBinding) {
+        with(binding) {
             content.setText(data.content)
             linkText.setText(data.link)
             when (attachment?.type) {
                 AttachmentType.IMAGE -> {
-                    loadImage(fragmentBinding.photo, attachment.url)
+                    loadImage(binding.photo, attachment.url)
                 }
                 AttachmentType.VIDEO -> {
                     //TODO()
@@ -738,7 +743,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         timePicker.show(parentFragmentManager, "event_time")
 
         timePicker.addOnPositiveButtonClickListener {
-            fragmentBinding.eventTimeText.setText(
+            binding.eventTimeText.setText(
                 getFormattedStringTime(
                     timePicker.hour,
                     timePicker.minute
@@ -747,7 +752,11 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         }
     }
 
-    private fun getFormattedStringTime(hour: Int, minute: Int, separator: String = ":"): String {
+    private fun getFormattedStringTime(
+        hour: Int,
+        minute: Int,
+        separator: String = ":"
+    ): String {
         val strHour = if (hour < 10) "0$hour" else hour.toString()
         val strMinute = if (minute < 10) "0$minute" else minute.toString()
         return "${strHour}${separator}${strMinute}"
@@ -772,7 +781,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
         datePicker.addOnPositiveButtonClickListener {
             val date = Date(it)
-            fragmentBinding.eventDateText.setText(
+            binding.eventDateText.setText(
                 getFormattedDateTimeToString(
                     date,
                     "dd.MM.yyyy"
@@ -815,4 +824,35 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 }
             })
     }
+
+    override fun onPause() {
+        super.onPause()
+        if (data is PostListItem) {
+            val post = postViewModel.getAudioPlayingPost()
+            if (post != null)
+                audioPlayer.stopPlaying(PostListItem(post = post) as DataItem)
+        } else {
+            val event = eventViewModel.getAudioPlayingEvent()
+            if (event != null)
+                audioPlayer.stopPlaying(EventListItem(event = event) as DataItem)
+        }
+    }
+
+    private fun playStopAudioPlayer(path: String? = null) {
+        if (data != null) {
+            val currentData = if (data is PostListItem) {
+                val postItem = data as PostListItem
+                postItem.copy(post = postItem.post.copy(isAudioPlayed = !binding.audioPlayerInclude.playStop.isChecked))
+            } else {
+                val eventItem = data as EventListItem
+                eventItem.copy(event = eventItem.event.copy(isAudioPlayed = !binding.audioPlayerInclude.playStop.isChecked))
+
+            }
+                audioPlayer.playStopAudio(currentData, binding.audioPlayerInclude, path)
+        }
+        if (path != null) {
+
+        }
+    }
 }
+

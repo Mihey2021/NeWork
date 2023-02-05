@@ -3,6 +3,7 @@ package ru.netology.nework.models
 import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaPlayer
+import android.net.Uri
 import android.widget.SeekBar
 import androidx.appcompat.app.AlertDialog
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -10,6 +11,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import ru.netology.nework.R
+import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.models.event.EventListItem
@@ -31,9 +33,9 @@ class AudioPlayer @Inject constructor(
     private val _audioPlayerStateChange: MutableStateFlow<DataItem?> = MutableStateFlow(null)
     val audioPlayerStateChange = _audioPlayerStateChange.asStateFlow()
 
-    lateinit var audioBinding: PostCardBinding
+    private lateinit var audioBinding: AudioPlayerBinding
 
-    fun playStopAudio(dataItem: DataItem, binding: PostCardBinding) {
+    fun playStopAudio(dataItem: DataItem, binding: AudioPlayerBinding, path: String? = null) {
         audioBinding = binding
         audioJob?.cancel()
         if (!dataItem.isAudioPlayed) {
@@ -42,7 +44,7 @@ class AudioPlayer @Inject constructor(
             mediaPlayer?.setOnCompletionListener {
                 stopPlaying(dataItem)
             }
-            mediaPlayer?.setDataSource(dataItem.attachment!!.url)
+            mediaPlayer?.setDataSource(path ?: dataItem.attachment!!.url)
             mediaPlayer?.prepareAsync()
             mediaPlayer?.setOnPreparedListener {
                 it.start()
@@ -61,6 +63,7 @@ class AudioPlayer @Inject constructor(
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        initializeSeekBar()
         _audioPlayerStateChange.value = getNewDataItem(dataItem)
     }
 
@@ -74,13 +77,15 @@ class AudioPlayer @Inject constructor(
     @SuppressLint("SetTextI18n")
     private fun initializeSeekBar() {
         if (mediaPlayer != null) {
-            audioBinding.audioPlayerInclude.duration.text =
+            audioBinding.playStop.isChecked = true
+            audioBinding.duration.text =
                 getFormattingTimeString(mediaPlayer!!.duration)
         } else {
-            audioBinding.audioPlayerInclude.duration.text = ""
+            audioBinding.playStop.isChecked = false
+            audioBinding.duration.text = ""
         }
-        audioBinding.audioPlayerInclude.currentPosition.text = ""
-        val seekBar = audioBinding.audioPlayerInclude.seekBar
+        audioBinding.currentPosition.text = ""
+        val seekBar = audioBinding.seekBar
         seekBar.max = mediaPlayer?.duration ?: 0
         seekBar.progress = mediaPlayer?.currentPosition ?: 0
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -104,7 +109,7 @@ class AudioPlayer @Inject constructor(
                         withContext(Dispatchers.Main) {
                             val currentPosition = mediaPlayer?.currentPosition ?: 0
                             seekBar.progress = currentPosition
-                            audioBinding.audioPlayerInclude.currentPosition.text =
+                            audioBinding.currentPosition.text =
                                if (mediaPlayer == null) "" else getCurrentPositionText(currentPosition)
                         }
                         delay(100)
@@ -116,7 +121,7 @@ class AudioPlayer @Inject constructor(
         }
     }
 
-    fun refreshSeekBar(binding: PostCardBinding) {
+    fun refreshSeekBar(binding: AudioPlayerBinding) {
         audioBinding = binding
         initializeSeekBar()
     }
