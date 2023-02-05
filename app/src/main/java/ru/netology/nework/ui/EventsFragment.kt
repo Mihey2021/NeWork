@@ -1,5 +1,6 @@
 package ru.netology.nework.ui
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -21,11 +22,14 @@ import ru.netology.nework.adapters.EventsAdapter
 import ru.netology.nework.adapters.OnInteractionListener
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentEventsBinding
+import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.filter.Filters
+import ru.netology.nework.models.AudioPlayer
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
+import ru.netology.nework.models.DeepLinks
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
@@ -46,6 +50,9 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
     @Inject
     lateinit var filters: Filters
 
+    @Inject
+    lateinit var audioPlayer: AudioPlayer
+
     private var dialog: AlertDialog? = null
     private var authUser: User? = null
     private var filterBy: Long = 0L
@@ -58,31 +65,31 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         binding = FragmentEventsBinding.inflate(layoutInflater)
 
         adapter = EventsAdapter(object : OnInteractionListener {
-            override fun onEdit(event: DataItem) {
+            override fun onEdit(dataItem: DataItem) {
                 val direction =
                     if (requireParentFragment() is FeedFragment)
-                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = event as EventListItem)
+                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = dataItem as EventListItem)
                     else
                         UserPageFragmentDirections.actionUserPageFragmentToNewPostFragment(
-                            editingData = event as EventListItem
+                            editingData = dataItem as EventListItem
                         )
                 findNavController().navigate(direction)
             }
 
-            override fun onLike(event: DataItem) {
+            override fun onLike(dataItem: DataItem) {
                 if (!authViewModel.authorized)
                     showAuthorizationQuestionDialog()
                 else {
-                    viewModel.likeById(event.id, event.likedByMe)
+                    viewModel.likeById(dataItem.id, dataItem.likedByMe)
                 }
             }
 
-            override fun onLikeLongClick(view: View, event: DataItem) {
+            override fun onLikeLongClick(view: View, dataItem: DataItem) {
                 val popupMenu = AdditionalFunctions.prepareUsersPopupMenu(
                     requireContext(),
                     view,
-                    event.likeOwnerIds,
-                    event.users,
+                    dataItem.likeOwnerIds,
+                    dataItem.users,
                     authUser?.id ?: 0L
                 )
                 setListenersAndShowPopupMenu(popupMenu)
@@ -121,8 +128,8 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                 }
             }
 
-            override fun onRemove(event: DataItem) {
-                viewModel.removeById(event.id)
+            override fun onRemove(dataItem: DataItem) {
+                viewModel.removeById(dataItem.id)
             }
 
             override fun onCoordinatesClick(coordinates: Coordinates) {
@@ -130,8 +137,11 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             }
 
             override fun onAvatarClick(authorId: Long) {
-                //postViewModel.setFilterBy(authorId)
-                filters.setFilterBy(authorId)
+                findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${authorId}"))
+            }
+
+            override fun onPlayStopAudio(dataItem: DataItem, binding: PostCardBinding) {
+                audioPlayer.playStopAudio(dataItem, binding)
             }
 
             override fun onPhotoView(photoUrl: String) {
@@ -144,7 +154,7 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                         )
                 findNavController().navigate(direction)
             }
-        })
+        }, audioPlayer)
     }
 
     override fun onCreateView(
@@ -153,6 +163,15 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
     ): View {
 
         viewModel.clearFeedModelState()
+
+        lifecycleScope.launch{
+            audioPlayer.audioPlayerStateChange.collectLatest {
+                if (it == null) return@collectLatest
+                val eventListItem = it as? EventListItem
+                if (eventListItem != null)
+                    viewModel.playStopAudio(eventListItem.event)
+            }
+        }
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
@@ -270,8 +289,8 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
     private fun setListenersAndShowPopupMenu(popupMenu: PopupMenu) {
         popupMenu.setOnMenuItemClickListener {
-            //postViewModel.setFilterBy(it.itemId.toLong())
-            filters.setFilterBy(it.itemId.toLong())
+            //filters.setFilterBy(it.itemId.toLong())
+            findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${it.itemId.toLong()}"))
             true
         }
         popupMenu.show()
@@ -292,11 +311,6 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         findNavController().navigate(direction)
     }
 
-//    private fun setActionBarSubTitle(subTitle: String? = null) {
-//        val actionBar = (activity as AppCompatActivity).supportActionBar
-//        actionBar?.subtitle = subTitle ?: ""
-//    }
-
     private fun showAuthorizationQuestionDialog() {
         AppDialogs.getDialog(requireContext(),
             AppDialogs.QUESTION_DIALOG,
@@ -310,4 +324,12 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                 }
             })
     }
+
+    override fun onPause() {
+        super.onPause()
+        val event = viewModel.getAudioPlayingEvent()
+        if(event != null)
+            audioPlayer.stopPlaying(EventListItem(event = event) as DataItem)
+    }
+
 }

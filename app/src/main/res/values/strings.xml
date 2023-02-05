@@ -84,4 +84,7 @@
     <string name="error_unknown">An unknown error has occurred</string>
     <string name="error_empty_response">The server returned an empty response</string>
     <string name="pick_audio">Pick an audio recording</string>
+    <string name="rewind_audio">Rewind audio</string>
+    <string name="stop">Stop</string>
+    <string name="play">Play</string>
 </resources>

@@ -21,4 +21,6 @@ data class Post (
     val attachment: Attachment? = null,
     val ownedByMe: Boolean,
     val users: Map<Long, UserPreview>,
+    val isAudioPlayed: Boolean = false,
+    val initInAudioPlayer: Boolean = false,
 ): java.io.Serializable

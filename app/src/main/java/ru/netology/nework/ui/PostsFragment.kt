@@ -22,9 +22,11 @@ import ru.netology.nework.adapters.OnInteractionListener
 import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentPostsBinding
+import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.filter.Filters
+import ru.netology.nework.models.AudioPlayer
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.DeepLinks
@@ -45,6 +47,7 @@ class PostsFragment : Fragment() {
     private var authUser: User? = null
     private lateinit var adapter: PostsAdapter
     private var filterBy: Long = 0L
+
     lateinit var binding: FragmentPostsBinding
 
     @Inject
@@ -53,28 +56,31 @@ class PostsFragment : Fragment() {
     @Inject
     lateinit var filters: Filters
 
+    @Inject
+    lateinit var audioPlayer: AudioPlayer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = FragmentPostsBinding.inflate(layoutInflater)
 
         adapter = PostsAdapter(object : OnInteractionListener {
-            override fun onEdit(post: DataItem) {
+            override fun onEdit(dataItem: DataItem) {
                 val direction =
                     if (requireParentFragment() is FeedFragment)
-                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = post as PostListItem)
+                        FeedFragmentDirections.actionFeedFragmentToNewPostFragment(editingData = dataItem as PostListItem)
                     else
                         UserPageFragmentDirections.actionUserPageFragmentToNewPostFragment(
-                            editingData = post as PostListItem
+                            editingData = dataItem as PostListItem
                         )
                 findNavController().navigate(direction)
             }
 
-            override fun onLike(post: DataItem) {
+            override fun onLike(dataItem: DataItem) {
                 if (!authViewModel.authorized)
                     showAuthorizationQuestionDialog()
                 else {
-                    viewModel.likeById(post.id, post.likedByMe)
+                    viewModel.likeById(dataItem.id, dataItem.likedByMe)
                 }
             }
 
@@ -100,8 +106,8 @@ class PostsFragment : Fragment() {
                 setListenersAndShowPopupMenu(popupMenu)
             }
 
-            override fun onRemove(post: DataItem) {
-                viewModel.removeById(post.id)
+            override fun onRemove(dataItem: DataItem) {
+                viewModel.removeById(dataItem.id)
             }
 
             override fun onCoordinatesClick(coordinates: Coordinates) {
@@ -110,6 +116,10 @@ class PostsFragment : Fragment() {
 
             override fun onAvatarClick(authorId: Long) {
                 findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${authorId}"))
+            }
+
+            override fun onPlayStopAudio(dataItem: DataItem, binding: PostCardBinding) {
+                audioPlayer.playStopAudio(dataItem, binding)
             }
 
             override fun onPhotoView(photoUrl: String) {
@@ -123,7 +133,7 @@ class PostsFragment : Fragment() {
                 findNavController().navigate(direction)
             }
 
-        })
+        }, audioPlayer)
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
@@ -147,6 +157,15 @@ class PostsFragment : Fragment() {
     ): View {
 
         viewModel.clearFeedModelState()
+
+        lifecycleScope.launch{
+            audioPlayer.audioPlayerStateChange.collectLatest {
+                if (it == null) return@collectLatest
+                val postListItem = it as? PostListItem
+                if (postListItem != null)
+                    viewModel.playStopAudio(postListItem.post)
+            }
+        }
 
         lifecycleScope.launch {
             filters.filterBy.collectLatest { userId ->
@@ -278,4 +297,12 @@ class PostsFragment : Fragment() {
                 }
             })
     }
+
+    override fun onPause() {
+        super.onPause()
+        val post = viewModel.getAudioPlayingPost()
+        if(post != null)
+            audioPlayer.stopPlaying(PostListItem(post = post) as DataItem)
+    }
+
 }

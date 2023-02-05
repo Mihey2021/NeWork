@@ -25,4 +25,6 @@ interface DataItem : java.io.Serializable {
     val speakerIds: List<Long>
     val participantsIds: List<Long>
     val participatedByMe: Boolean
+    val isAudioPlayed: Boolean
+    val initInAudioPlayer: Boolean
 }

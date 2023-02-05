@@ -5,9 +5,7 @@ import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.user.UserPreview
 
-data class EventListItem(
-    val event: Event,
-) : java.io.Serializable, DataItem {
+data class EventListItem(val event: Event) : java.io.Serializable, DataItem {
     override val id: Long get() = event.id
     override val authorId: Long get() = event.authorId
     override val author: String get() = event.author
@@ -29,4 +27,6 @@ data class EventListItem(
     override val users: Map<Long, UserPreview> get() = event.users
     override val mentionIds: List<Long> get() = listOf()
     override val mentionedMe: Boolean get() = false
+    override val isAudioPlayed: Boolean get() = event.isAudioPlayed
+    override val initInAudioPlayer: Boolean get() = event.initInAudioPlayer
 }

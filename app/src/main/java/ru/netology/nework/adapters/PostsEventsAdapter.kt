@@ -12,33 +12,38 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import ru.netology.nework.R
 import ru.netology.nework.databinding.PostCardBinding
-import ru.netology.nework.models.*
-import ru.netology.nework.models.event.EventListItem
-import ru.netology.nework.utils.AdditionalFunctions
 import ru.netology.nework.extensions.loadCircleCrop
 import ru.netology.nework.extensions.loadFromResource
+import ru.netology.nework.models.*
+import ru.netology.nework.models.event.EventListItem
+import ru.netology.nework.models.post.PostListItem
+import ru.netology.nework.utils.AdditionalFunctions
 import java.util.*
+import javax.inject.Inject
 
 interface OnInteractionListener {
-    fun onLike(data: DataItem) {}
+    fun onLike(dataItem: DataItem) {}
     fun onLikeLongClick(view: View, dataItem: DataItem) {}
     fun onMentionClick(view: View, dataItem: DataItem) {}
     fun onSpeakerClick(view: View, dataItem: DataItem) {}
     fun onParticipantsClick(eventId: Long, participatedByMe: Boolean) {}
     fun onParticipantsLongClick(view: View, dataItem: DataItem) {}
-    fun onEdit(data: DataItem) {}
-    fun onRemove(data: DataItem) {}
+    fun onEdit(dataItem: DataItem) {}
+    fun onRemove(dataItem: DataItem) {}
     fun onPhotoView(photoUrl: String) {}
     fun onCoordinatesClick(coordinates: Coordinates) {}
-    fun onAvatarClick(authorId: Long)
+    fun onAvatarClick(authorId: Long) {}
+    fun onPlayStopAudio(dataItem: DataItem, binding: PostCardBinding) {}
 }
 
-class PostsAdapter(
+class PostsAdapter @Inject constructor(
     private val onInteractionListener: OnInteractionListener,
-) : PagingDataAdapter<ru.netology.nework.models.post.PostListItem, ViewHolder>(PostDiffCallback()) {
+    private val audioPlayer: AudioPlayer,
+) : PagingDataAdapter<PostListItem, ViewHolder>(PostDiffCallback()) {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = PostCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding, onInteractionListener)
+        return ViewHolder(binding, onInteractionListener, audioPlayer)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -47,12 +52,13 @@ class PostsAdapter(
     }
 }
 
-class EventsAdapter(
+class EventsAdapter @Inject constructor(
     private val onInteractionListener: OnInteractionListener,
+    private val audioPlayer: AudioPlayer,
 ) : PagingDataAdapter<EventListItem, ViewHolder>(EventDiffCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = PostCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding, onInteractionListener)
+        return ViewHolder(binding, onInteractionListener, audioPlayer)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -61,10 +67,12 @@ class EventsAdapter(
     }
 }
 
-class ViewHolder(
+class ViewHolder @Inject constructor(
     private val binding: PostCardBinding,
     private val onInteractionListener: OnInteractionListener,
+    private val audioPlayer: AudioPlayer,
 ) : RecyclerView.ViewHolder(binding.root) {
+
     private var additionalText: String = ""
 
     @SuppressLint("SetTextI18n")
@@ -99,22 +107,48 @@ class ViewHolder(
 
             menu.isVisible = dataItem.ownedByMe
 
-            val attachment = dataItem.attachment
-            if (attachment != null && attachment.type == AttachmentType.IMAGE) {
-                attachmentImageView.visibility = View.VISIBLE
-
-                Glide.with(attachmentImageView)
-                    .load(dataItem.attachment?.url)
-                    .placeholder(R.drawable.ic_baseline_loading_24)
-                    .error(R.drawable.ic_baseline_non_loaded_image_24)
-                    .timeout(10_000)
-                    .into(attachmentImageView)
-
-                attachmentImageView.setOnClickListener {
-                    onInteractionListener.onPhotoView(dataItem.attachment?.url ?: "")
-                }
+            audioPlayerGroup.visibility = View.GONE
+            attachmentImageView.visibility = View.GONE
+            val playing = dataItem.isAudioPlayed
+            audioPlayerInclude.playStop.isChecked = playing
+            if (!playing) {
+                audioPlayerInclude.duration.text = ""
+                audioPlayerInclude.currentPosition.text = ""
+                audioPlayerInclude.seekBar.max = 0
+                audioPlayerInclude.seekBar.progress = 0
             } else {
-                attachmentImageView.visibility = View.GONE
+                audioPlayer.refreshSeekBar(binding)
+            }
+
+            val attachment = dataItem.attachment
+            if (attachment != null) {
+                when (attachment.type) {
+                    AttachmentType.IMAGE -> {
+                        attachmentImageView.visibility = View.VISIBLE
+
+                        Glide.with(attachmentImageView)
+                            .load(dataItem.attachment?.url)
+                            .placeholder(R.drawable.ic_baseline_loading_24)
+                            .error(R.drawable.ic_baseline_non_loaded_image_24)
+                            .timeout(10_000)
+                            .into(attachmentImageView)
+
+                        attachmentImageView.setOnClickListener {
+                            onInteractionListener.onPhotoView(dataItem.attachment?.url ?: "")
+                        }
+                    }
+                    AttachmentType.AUDIO -> {
+                        audioPlayerGroup.visibility = View.VISIBLE
+                        audioPlayerInclude.playStop.setOnClickListener {
+                            onInteractionListener.onPlayStopAudio(dataItem, binding)
+                        }
+                    }
+                    else -> {
+//                        Video attachment
+//                        attachmentImageView.visibility = View.GONE
+//                        audioPlayerGroup.visibility = View.GONE
+                    }
+                }
             }
 
             menu.setOnClickListener {
@@ -207,25 +241,25 @@ class ViewHolder(
     }
 }
 
-class PostDiffCallback : DiffUtil.ItemCallback<ru.netology.nework.models.post.PostListItem>() {
+class PostDiffCallback : DiffUtil.ItemCallback<PostListItem>() {
     override fun areItemsTheSame(
-        oldItem: ru.netology.nework.models.post.PostListItem,
-        newItem: ru.netology.nework.models.post.PostListItem
+        oldItem: PostListItem,
+        newItem: PostListItem
     ): Boolean {
         return oldItem.id == newItem.id
     }
 
     override fun areContentsTheSame(
-        oldItem: ru.netology.nework.models.post.PostListItem,
-        newItem: ru.netology.nework.models.post.PostListItem
+        oldItem: PostListItem,
+        newItem: PostListItem
     ): Boolean {
         return oldItem == newItem
     }
 
     //не применять анимацию (убрать "мерцание")
     override fun getChangePayload(
-        oldItem: ru.netology.nework.models.post.PostListItem,
-        newItem: ru.netology.nework.models.post.PostListItem
+        oldItem: PostListItem,
+        newItem: PostListItem
     ): Any = Unit
 }
 

@@ -6,9 +6,7 @@ import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.event.EventType
 import ru.netology.nework.models.user.UserPreview
 
-data class PostListItem(
-    val post: Post,
-) : java.io.Serializable, DataItem {
+data class PostListItem(val post: Post) : java.io.Serializable, DataItem {
     override val id: Long get() = post.id
     override val authorId: Long get() = post.authorId
     override val author: String get() = post.author
@@ -30,4 +28,6 @@ data class PostListItem(
     override val participantsIds: List<Long> get() = listOf()
     override val participatedByMe: Boolean get() = false
     override val type: EventType get() = EventType.OFFLINE
+    override val isAudioPlayed: Boolean get() = post.isAudioPlayed
+    override val initInAudioPlayer: Boolean get() = post.initInAudioPlayer
 }

@@ -85,4 +85,7 @@
     <string name="error_unknown">Произошла неизвестная ошибка</string>
     <string name="error_empty_response">Сервер вернул пустой ответ</string>
     <string name="pick_audio">Выбрать аудиозапись</string>
+    <string name="rewind_audio">Перемотка аудио</string>
+    <string name="stop">Остановить</string>
+    <string name="play">Воспроизвести</string>
 </resources>

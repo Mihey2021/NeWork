@@ -95,6 +95,8 @@ class PostViewModel @Inject constructor(
                         attachment = changingPost.attachment,
                         ownedByMe = changingPost.ownedByMe,
                         users = changingPost.users,
+                        isAudioPlayed = changingPost.isAudioPlayed,
+                        initInAudioPlayer = changingPost.initInAudioPlayer,
                     )
                 PostListItem(postWithLocalChanges)
             }
@@ -119,7 +121,12 @@ class PostViewModel @Inject constructor(
         localChangesFlow.value = OnChange(localChanges)
     }
 
-    fun changeMedia(uri: Uri?, file: File?, attachmentType: AttachmentType? = null, mediaType: MediaType? = null) {
+    fun changeMedia(
+        uri: Uri?,
+        file: File?,
+        attachmentType: AttachmentType? = null,
+        mediaType: MediaType? = null
+    ) {
         if (file == null || attachmentType == null) return
         _media.value = MediaModel(uri, Triple(file, attachmentType, mediaType))
     }
@@ -141,7 +148,13 @@ class PostViewModel @Inject constructor(
                         else -> _media.value?.fileDescription?.let { fileDescription ->
                             val changingPost = repository.saveWithAttachment(
                                 it,
-                                MediaUpload(Triple(fileDescription.first!!, fileDescription.second, fileDescription.third))
+                                MediaUpload(
+                                    Triple(
+                                        fileDescription.first!!,
+                                        fileDescription.second,
+                                        fileDescription.third
+                                    )
+                                )
                             )
                             makeChanges(changingPost)
                         }
@@ -164,6 +177,16 @@ class PostViewModel @Inject constructor(
             }
         }
     }
+
+    fun playStopAudio(post: Post) {
+        localChanges.changingPosts.values.filter { filteringPost -> filteringPost.isAudioPlayed && filteringPost.id != post.id}
+            .forEach { makeChanges(it.copy(isAudioPlayed = false)) }
+        val changingPost = post.copy(isAudioPlayed = post.isAudioPlayed)
+        makeChanges(changingPost)
+    }
+
+    fun getAudioPlayingPost() =
+        localChanges.changingPosts.values.firstOrNull { post -> post.isAudioPlayed }
 
     fun removeById(id: Long) {
         viewModelScope.launch {

@@ -89,6 +89,8 @@ class EventViewModel @Inject constructor(
                         attachment = changingEvent.attachment,
                         ownedByMe = changingEvent.ownedByMe,
                         users = changingEvent.users,
+                        isAudioPlayed = changingEvent.isAudioPlayed,
+                        initInAudioPlayer = changingEvent.initInAudioPlayer,
                     )
                 EventListItem(eventWithLocalChanges)
             }
@@ -113,7 +115,12 @@ class EventViewModel @Inject constructor(
         localChangesFlow.value = OnChangeEvent(localChanges)
     }
 
-    fun changeMedia(uri: Uri?, file: File?, attachmentType: AttachmentType? = null, mediaType: MediaType? = null) {
+    fun changeMedia(
+        uri: Uri?,
+        file: File?,
+        attachmentType: AttachmentType? = null,
+        mediaType: MediaType? = null
+    ) {
         if (file == null || attachmentType == null) return
         _media.value = MediaModel(uri, Triple(file, attachmentType, mediaType))
     }
@@ -124,6 +131,7 @@ class EventViewModel @Inject constructor(
 
     fun save() {
         edited.value?.let {
+            _dataState.value = FeedModelState(loading = true)
             viewModelScope.launch {
                 try {
                     when (_media.value) {
@@ -134,7 +142,13 @@ class EventViewModel @Inject constructor(
                         else -> _media.value?.fileDescription?.let { fileDescription ->
                             val changingEvent = repository.saveWithAttachment(
                                 it,
-                                MediaUpload(Triple(fileDescription.first!!, fileDescription.second, fileDescription.third))
+                                MediaUpload(
+                                    Triple(
+                                        fileDescription.first!!,
+                                        fileDescription.second,
+                                        fileDescription.third
+                                    )
+                                )
                             )
                             makeChanges(changingEvent)
                         }
@@ -157,6 +171,16 @@ class EventViewModel @Inject constructor(
             }
         }
     }
+
+    fun playStopAudio(event: Event) {
+        localChanges.changingEvents.values.filter { filteringEvent -> filteringEvent.isAudioPlayed && filteringEvent.id != event.id }
+            .forEach { makeChanges(it.copy(isAudioPlayed = false)) }
+        val changingEvent = event.copy(isAudioPlayed = event.isAudioPlayed)
+        makeChanges(changingEvent)
+    }
+
+    fun getAudioPlayingEvent() =
+        localChanges.changingEvents.values.firstOrNull { event -> event.isAudioPlayed }
 
     fun removeById(id: Long) {
         viewModelScope.launch {
