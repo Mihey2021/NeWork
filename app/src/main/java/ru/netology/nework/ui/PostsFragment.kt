@@ -23,14 +23,13 @@ import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.FragmentPostsBinding
-import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.filter.Filters
-import ru.netology.nework.models.AudioPlayer
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.DeepLinks
+import ru.netology.nework.models.audioPlayer.AudioPlayer
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions

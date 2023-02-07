@@ -125,6 +125,10 @@ class EventViewModel @Inject constructor(
         _media.value = MediaModel(uri, Triple(file, attachmentType, mediaType))
     }
 
+    fun clearMedia() {
+        _media.value = MediaModel()
+    }
+
     fun edit(event: EventCreateRequest) {
         edited.value = event
     }

@@ -16,6 +16,7 @@ import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.extensions.loadCircleCrop
 import ru.netology.nework.extensions.loadFromResource
 import ru.netology.nework.models.*
+import ru.netology.nework.models.audioPlayer.AudioPlayer
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.utils.AdditionalFunctions

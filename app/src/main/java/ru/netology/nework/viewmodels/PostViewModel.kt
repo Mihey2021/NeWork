@@ -131,6 +131,10 @@ class PostViewModel @Inject constructor(
         _media.value = MediaModel(uri, Triple(file, attachmentType, mediaType))
     }
 
+    fun clearMedia() {
+        _media.value = MediaModel()
+    }
+
     fun edit(post: PostCreateRequest) {
         edited.value = post
     }
@@ -179,7 +183,7 @@ class PostViewModel @Inject constructor(
     }
 
     fun playStopAudio(post: Post) {
-        localChanges.changingPosts.values.filter { filteringPost -> filteringPost.isAudioPlayed && filteringPost.id != post.id}
+        localChanges.changingPosts.values.filter { filteringPost -> filteringPost.isAudioPlayed && filteringPost.id != post.id }
             .forEach { makeChanges(it.copy(isAudioPlayed = false)) }
         val changingPost = post.copy(isAudioPlayed = post.isAudioPlayed)
         makeChanges(changingPost)

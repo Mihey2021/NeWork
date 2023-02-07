@@ -1,9 +1,8 @@
-package ru.netology.nework.models
+package ru.netology.nework.models.audioPlayer
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaPlayer
-import android.net.Uri
 import android.widget.SeekBar
 import androidx.appcompat.app.AlertDialog
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -12,8 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import ru.netology.nework.R
 import ru.netology.nework.databinding.AudioPlayerBinding
-import ru.netology.nework.databinding.PostCardBinding
 import ru.netology.nework.dialogs.AppDialogs
+import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.post.PostListItem
 import javax.inject.Inject
@@ -35,20 +34,25 @@ class AudioPlayer @Inject constructor(
 
     private lateinit var audioBinding: AudioPlayerBinding
 
-    fun playStopAudio(dataItem: DataItem, binding: AudioPlayerBinding, path: String? = null) {
+    fun playStopAudio(dataItem: DataItem? = null, binding: AudioPlayerBinding, newAudioAttachment: NewAudioAttachment? = null) {
+
+        if (dataItem == null && newAudioAttachment == null) return
+
         audioBinding = binding
         audioJob?.cancel()
-        if (!dataItem.isAudioPlayed) {
+        val playing = newAudioAttachment?.nowPlaying ?: dataItem!!.isAudioPlayed
+        if (!playing) {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer()
             mediaPlayer?.setOnCompletionListener {
                 stopPlaying(dataItem)
             }
-            mediaPlayer?.setDataSource(path ?: dataItem.attachment!!.url)
+            mediaPlayer?.setDataSource(newAudioAttachment?.url ?: dataItem!!.attachment!!.url)
             mediaPlayer?.prepareAsync()
             mediaPlayer?.setOnPreparedListener {
                 it.start()
-                _audioPlayerStateChange.value = getNewDataItem(dataItem, isStopped = false)
+                if(dataItem != null)
+                    _audioPlayerStateChange.value = getNewDataItem(dataItem, isStopped = false)
                 initializeSeekBar()
             }
             return
@@ -58,13 +62,14 @@ class AudioPlayer @Inject constructor(
         initializeSeekBar()
     }
 
-    fun stopPlaying(dataItem: DataItem) {
+    fun stopPlaying(dataItem: DataItem?) {
         audioJob?.cancel()
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
         initializeSeekBar()
-        _audioPlayerStateChange.value = getNewDataItem(dataItem)
+        if(dataItem != null)
+            _audioPlayerStateChange.value = getNewDataItem(dataItem)
     }
 
     private fun getNewDataItem(dataItem: DataItem, isStopped: Boolean = true): DataItem {
