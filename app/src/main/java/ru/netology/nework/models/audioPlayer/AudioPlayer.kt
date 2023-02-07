@@ -34,7 +34,11 @@ class AudioPlayer @Inject constructor(
 
     private lateinit var audioBinding: AudioPlayerBinding
 
-    fun playStopAudio(dataItem: DataItem? = null, binding: AudioPlayerBinding, newAudioAttachment: NewAudioAttachment? = null) {
+    fun playStopAudio(
+        dataItem: DataItem? = null,
+        binding: AudioPlayerBinding,
+        newAudioAttachment: NewAudioAttachment? = null
+    ) {
 
         if (dataItem == null && newAudioAttachment == null) return
 
@@ -51,7 +55,7 @@ class AudioPlayer @Inject constructor(
             mediaPlayer?.prepareAsync()
             mediaPlayer?.setOnPreparedListener {
                 it.start()
-                if(dataItem != null)
+                if (dataItem != null)
                     _audioPlayerStateChange.value = getNewDataItem(dataItem, isStopped = false)
                 initializeSeekBar()
             }
@@ -62,13 +66,14 @@ class AudioPlayer @Inject constructor(
         initializeSeekBar()
     }
 
-    fun stopPlaying(dataItem: DataItem?) {
+    fun stopPlaying(dataItem: DataItem? = null, onlyStop: Boolean = false) {
         audioJob?.cancel()
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        if (onlyStop) return
         initializeSeekBar()
-        if(dataItem != null)
+        if (dataItem != null)
             _audioPlayerStateChange.value = getNewDataItem(dataItem)
     }
 
@@ -115,7 +120,9 @@ class AudioPlayer @Inject constructor(
                             val currentPosition = mediaPlayer?.currentPosition ?: 0
                             seekBar.progress = currentPosition
                             audioBinding.currentPosition.text =
-                               if (mediaPlayer == null) "" else getCurrentPositionText(currentPosition)
+                                if (mediaPlayer == null) "" else getCurrentPositionText(
+                                    currentPosition
+                                )
                         }
                         delay(100)
                     }

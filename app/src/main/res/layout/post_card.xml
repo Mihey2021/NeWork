@@ -133,7 +133,7 @@
             android:id="@+id/audioPlayerContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toTopOf="@id/attachmentImageView"
+            app:layout_constraintBottom_toTopOf="@id/videoPlayerContainer"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/eventDate"
@@ -148,6 +148,25 @@
                 android:layout_height="wrap_content"/>
         </FrameLayout>
 
+        <FrameLayout
+            android:id="@+id/videoPlayerContainer"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/video_height"
+            app:layout_constraintBottom_toTopOf="@id/attachmentImageView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/audioPlayerContainer"
+            android:layout_marginTop="@dimen/common_spacing"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <include
+                android:id="@+id/videoPlayerInclude"
+                layout="@layout/video_player"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        </FrameLayout>
+
         <ImageView
             android:id="@+id/attachmentImageView"
             android:layout_width="0dp"
@@ -159,7 +178,7 @@
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/audioPlayerContainer"
+            app:layout_constraintTop_toBottomOf="@id/videoPlayerContainer"
             tools:srcCompat="@tools:sample/avatars" />
 
         <TextView
@@ -179,7 +198,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autoLink="web"
-            android:padding="8dp"
             android:textColorLink="@color/blue"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/coordinates"

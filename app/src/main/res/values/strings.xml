@@ -89,4 +89,5 @@
     <string name="play">Play</string>
     <string name="permission_necessary">Permission necessary</string>
     <string name="request">Request</string>
+    <string name="external_storage">External storage</string>
 </resources>

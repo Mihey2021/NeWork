@@ -14,4 +14,5 @@
     <color name="green">#085C1B</color>
     <color name="online_color">#21E712</color>
     <color name="offline_color">#D52B1B</color>
+    <color name="red">#C81F0F</color>
 </resources>

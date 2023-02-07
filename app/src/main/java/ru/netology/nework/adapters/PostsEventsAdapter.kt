@@ -111,6 +111,8 @@ class ViewHolder @Inject constructor(
 
             audioPlayerContainer.visibility = View.GONE
             attachmentImageView.visibility = View.GONE
+            videoPlayerContainer.visibility = View.GONE
+
             val playing = dataItem.isAudioPlayed
             audioPlayerInclude.playStop.isChecked = playing
             if (!playing) {
@@ -146,9 +148,7 @@ class ViewHolder @Inject constructor(
                         }
                     }
                     else -> {
-//                        Video attachment
-//                        attachmentImageView.visibility = View.GONE
-//                        audioPlayerGroup.visibility = View.GONE
+                        videoPlayerContainer.visibility = View.VISIBLE
                     }
                 }
             }

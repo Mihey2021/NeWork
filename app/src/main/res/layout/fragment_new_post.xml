@@ -183,50 +183,6 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <FrameLayout
-                android:id="@+id/audioPlayerContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/common_spacing"
-                android:visibility="gone"
-                tools:visibility="visible">
-
-            <include
-                android:id="@+id/audioPlayerInclude"
-                layout="@layout/audio_player"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/common_spacing_small"
-                android:layout_marginEnd="@dimen/common_spacing_small"/>
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/photoContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:visibility="gone"
-                tools:visibility="visible">
-
-                <ImageView
-                    android:id="@+id/photo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:contentDescription="@string/description_photo"
-                    android:minWidth="300dp"
-                    android:minHeight="300dp" />
-
-                <ImageButton
-                    android:id="@+id/removePhoto"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal|bottom"
-                    android:contentDescription="@string/remove"
-                    android:src="@drawable/ic_baseline_clear_24"
-                    android:text="@string/remove" />
-            </FrameLayout>
-
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/coordinatesLayout"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -271,6 +227,105 @@
                     android:maxLines="1"
                     android:textColorHint="#757575" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            <FrameLayout
+                android:id="@+id/audioPlayerContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/common_spacing"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/removeAudio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end|top"
+                        android:layout_marginEnd="@dimen/common_spacing_small"
+                        android:alpha="0.5"
+                        android:contentDescription="@string/remove"
+                        android:src="@drawable/ic_baseline_clear_24"
+                        android:text="@string/remove"
+                        app:tint="#EC0909" />
+                <include
+                    android:id="@+id/audioPlayerInclude"
+                    layout="@layout/audio_player"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/common_spacing_small"
+                    android:layout_marginEnd="@dimen/common_spacing_small"/>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/videoPlayerContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/common_spacing"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/removeVideo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end|top"
+                        android:layout_marginEnd="@dimen/common_spacing_small"
+                        android:alpha="0.5"
+                        android:contentDescription="@string/remove"
+                        android:src="@drawable/ic_baseline_clear_24"
+                        android:text="@string/remove"
+                        app:tint="#EC0909" />
+                    <include
+                        android:id="@+id/videoPlayerInclude"
+                        layout="@layout/video_player"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/video_height"
+                        android:layout_marginStart="@dimen/common_spacing_small"
+                        android:layout_marginEnd="@dimen/common_spacing_small"/>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/photoContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/photo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:contentDescription="@string/description_photo"
+                    android:minWidth="300dp"
+                    android:minHeight="300dp" />
+
+                <ImageButton
+                    android:id="@+id/removePhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end|top"
+                    android:layout_marginEnd="@dimen/common_spacing_small"
+                    android:alpha="0.5"
+                    android:contentDescription="@string/remove"
+                    android:src="@drawable/ic_baseline_clear_24"
+                    android:text="@string/remove"
+                    app:tint="@color/red" />
+            </FrameLayout>
+
         </LinearLayout>
     </ScrollView>
 

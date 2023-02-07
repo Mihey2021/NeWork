@@ -98,54 +98,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private var selectedEventType: EventType = EventType.OFFLINE
 
-    private fun checkPermissionReadExternalStorage(): Boolean {
-        val currentAPIVersion = Build.VERSION.SDK_INT
-        return if (currentAPIVersion >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(
-                        requireActivity(),
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                    )
-                ) {
-                    showPermissionReadExternalStorageDialog("External storage", Manifest.permission.READ_EXTERNAL_STORAGE)
-                } else {
-                    ActivityCompat
-                        .requestPermissions(
-                            requireActivity(),
-                            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                            MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE
-                        )
-                }
-                false
-            } else {
-                true
-            }
-        } else {
-            true
-        }
-    }
-
-
-
-    private fun showPermissionReadExternalStorageDialog(msg: String, permission: String) {
-        AppDialogs.getDialog(requireContext(), AppDialogs.QUESTION_DIALOG,
-            title = getString(R.string.permission_necessary),
-            message = "${getString(R.string.permission_necessary)}: $msg",
-            //titleIcon = R.drawable,
-            positiveButtonTitle = getString(R.string.request),
-            onDialogsInteractionListener = object : OnDialogsInteractionListener {
-                override fun onPositiveClickButton() {
-                    ActivityCompat.requestPermissions(requireActivity(),
-                        arrayOf(permission),
-                        MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE)
-                }
-            })
-    }
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -174,7 +126,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         initUi(data)
 
         setActionBarTitle(data != null)
-        binding.content.requestFocus()
+        //binding.content.requestFocus()
 
         val pickPhotoLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -239,16 +191,10 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         }
 
         binding.removePhoto.setOnClickListener {
-            if (data == null) {
-                if (isNewPost)
-                    postViewModel.changeMedia(null, null)
-                else
-                    eventViewModel.changeMedia(null, null)
-                return@setOnClickListener
-            }
-            binding.photoContainer.visibility = View.GONE
             clearDataAttachment()
-
+        }
+        binding.removeAudio.setOnClickListener {
+            clearDataAttachment()
         }
 
         val pickVideoLauncher =
@@ -330,7 +276,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                                     mediaType
                                 )
                             }
-                            //setAttachmentVisibility(AttachmentType.AUDIO, file?.absolutePath)
                         }
                     }
                 } catch (e: Exception) {
@@ -381,16 +326,15 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     setAttachmentVisibility()
                     return@observe
                 }
-//                binding.photoContainer.visibility = View.VISIBLE
-//                if(it?.fileDescription?.second == AttachmentType.IMAGE)
-//                    binding.photo.setImageURI(it.uri)
-
                 when (val attachmentType = it?.fileDescription?.second ?: data?.attachment?.type) {
                     AttachmentType.IMAGE -> {
                         setAttachmentVisibility(attachmentType = attachmentType, uri = it.uri)
                     }
                     AttachmentType.AUDIO -> {
-                        setAttachmentVisibility(attachmentType = attachmentType, path = it.fileDescription?.first?.absolutePath)
+                        setAttachmentVisibility(
+                            attachmentType = attachmentType,
+                            path = it.fileDescription?.first?.absolutePath
+                        )
                     }
                     else -> Unit
                 }
@@ -403,8 +347,18 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                     binding.photoContainer.visibility = View.GONE
                     return@observe
                 }
-                binding.photoContainer.visibility = View.VISIBLE
-                binding.photo.setImageURI(it.uri)
+                when (val attachmentType = it?.fileDescription?.second ?: data?.attachment?.type) {
+                    AttachmentType.IMAGE -> {
+                        setAttachmentVisibility(attachmentType = attachmentType, uri = it.uri)
+                    }
+                    AttachmentType.AUDIO -> {
+                        setAttachmentVisibility(
+                            attachmentType = attachmentType,
+                            path = it.fileDescription?.first?.absolutePath
+                        )
+                    }
+                    else -> Unit
+                }
             }
         }
 
@@ -466,7 +420,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             )
 
 
-            if (data is PostListItem) {
+            if (data is PostListItem || isNewPost) {
                 mentionIds = checkedUsers.users.keys.toList()
             } else {
                 speakerIds = checkedUsers.users.keys.toList()
@@ -478,8 +432,66 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         return binding.root
     }
 
+    private fun checkPermissionReadExternalStorage(): Boolean {
+        val currentAPIVersion = Build.VERSION.SDK_INT
+        return if (currentAPIVersion >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        requireActivity(),
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    )
+                ) {
+                    showPermissionReadExternalStorageDialog(
+                        getString(R.string.external_storage),
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    )
+                } else {
+                    ActivityCompat
+                        .requestPermissions(
+                            requireActivity(),
+                            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                            MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE
+                        )
+                }
+                false
+            } else {
+                true
+            }
+        } else {
+            true
+        }
+    }
+
+    private fun showPermissionReadExternalStorageDialog(msg: String, permission: String) {
+        AppDialogs.getDialog(requireContext(), AppDialogs.QUESTION_DIALOG,
+            title = getString(R.string.permission_necessary),
+            message = "${getString(R.string.permission_necessary)}: $msg",
+            //titleIcon = R.drawable,
+            positiveButtonTitle = getString(R.string.request),
+            onDialogsInteractionListener = object : OnDialogsInteractionListener {
+                override fun onPositiveClickButton() {
+                    ActivityCompat.requestPermissions(
+                        requireActivity(),
+                        arrayOf(permission),
+                        MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE
+                    )
+                }
+            })
+    }
+
     private fun clearDataAttachment() {
-        if (data == null) return
+        if (data == null) {
+            if (isNewPost)
+                postViewModel.changeMedia(null, null)
+            else
+                eventViewModel.changeMedia(null, null)
+            return
+        }
+
         data = if (data is PostListItem) {
             val currentData = data as PostListItem
             currentData.copy(post = currentData.post.copy(attachment = null))
@@ -487,6 +499,10 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             val currentData = data as EventListItem
             currentData.copy(event = currentData.event.copy(attachment = null))
         }
+
+        binding.photoContainer.visibility = View.GONE
+        binding.audioPlayerContainer.visibility = View.GONE
+
     }
 
     private fun setAttachmentVisibility(
@@ -583,7 +599,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun updateMentionUsersText(checkedUsers: UsersSelected) {
-        if (data is PostListItem) {
+        if (data is PostListItem || isNewPost) {
             binding.mentionUsersText.setText(getStringUserList(checkedUsers.users))
         } else {
             binding.speakersText.setText(getStringUserList(checkedUsers.users))
@@ -699,6 +715,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                         )
                 )
 
+                //На сервере отсекается datetime для существующего Event, нет смысла редактировать - делаем недоступным
                 if (data != null) {
                     eventDateText.isEnabled = false
                     eventTimeText.isEnabled = false
@@ -939,6 +956,11 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 )
             )
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        audioPlayer.stopPlaying(onlyStop = true)
     }
 
     override fun onDestroy() {
