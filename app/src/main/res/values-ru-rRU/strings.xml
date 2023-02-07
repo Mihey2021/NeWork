@@ -88,4 +88,6 @@
     <string name="rewind_audio">Перемотка аудио</string>
     <string name="stop">Остановить</string>
     <string name="play">Воспроизвести</string>
+    <string name="permission_necessary">Необходимо разрешение</string>
+    <string name="request">Запросить</string>
 </resources>

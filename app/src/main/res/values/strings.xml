@@ -87,4 +87,6 @@
     <string name="rewind_audio">Rewind audio</string>
     <string name="stop">Stop</string>
     <string name="play">Play</string>
+    <string name="permission_necessary">Permission necessary</string>
+    <string name="request">Request</string>
 </resources>

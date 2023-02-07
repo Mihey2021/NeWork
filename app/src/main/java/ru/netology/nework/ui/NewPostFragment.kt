@@ -1,8 +1,10 @@
 package ru.netology.nework.ui
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.net.toFile
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -62,10 +66,12 @@ import java.util.*
 import javax.inject.Inject
 
 
+const val MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 111
+
 @AndroidEntryPoint
 class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
-    private val postViewModel: PostViewModel by activityViewModels()//viewModels()
+    private val postViewModel: PostViewModel by activityViewModels()
     private val eventViewModel: EventViewModel by activityViewModels()
 
     @Inject
@@ -92,6 +98,53 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     private var selectedEventType: EventType = EventType.OFFLINE
 
+    private fun checkPermissionReadExternalStorage(): Boolean {
+        val currentAPIVersion = Build.VERSION.SDK_INT
+        return if (currentAPIVersion >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        requireActivity(),
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    )
+                ) {
+                    showPermissionReadExternalStorageDialog("External storage", Manifest.permission.READ_EXTERNAL_STORAGE)
+                } else {
+                    ActivityCompat
+                        .requestPermissions(
+                            requireActivity(),
+                            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                            MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE
+                        )
+                }
+                false
+            } else {
+                true
+            }
+        } else {
+            true
+        }
+    }
+
+
+
+    private fun showPermissionReadExternalStorageDialog(msg: String, permission: String) {
+        AppDialogs.getDialog(requireContext(), AppDialogs.QUESTION_DIALOG,
+            title = getString(R.string.permission_necessary),
+            message = "${getString(R.string.permission_necessary)}: $msg",
+            //titleIcon = R.drawable,
+            positiveButtonTitle = getString(R.string.request),
+            onDialogsInteractionListener = object : OnDialogsInteractionListener {
+                override fun onPositiveClickButton() {
+                    ActivityCompat.requestPermissions(requireActivity(),
+                        arrayOf(permission),
+                        MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE)
+                }
+            })
+    }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreateView(
@@ -207,6 +260,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                         }
                         Activity.RESULT_OK -> {
                             //val uri: Uri = getPath(it.data?.data) ?: return@registerForActivityResult
+                            clearDataAttachment()
                             val uri: Uri = it.data?.data ?: return@registerForActivityResult
                             val mediaType =
                                 requireContext().contentResolver.getType(uri)?.toMediaTypeOrNull()
@@ -235,6 +289,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             }
 
         binding.pickVideo.setOnClickListener {
+            if (!checkPermissionReadExternalStorage()) return@setOnClickListener
             val intent = Intent(
                 Intent.ACTION_PICK,
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI
@@ -284,6 +339,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             }
 
         binding.pickAudio.setOnClickListener {
+            if (!checkPermissionReadExternalStorage()) return@setOnClickListener
             val intent = Intent(
                 Intent.ACTION_PICK,
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
