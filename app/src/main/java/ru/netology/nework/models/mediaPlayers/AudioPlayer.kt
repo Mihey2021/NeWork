@@ -1,4 +1,4 @@
-package ru.netology.nework.models.audioPlayer
+package ru.netology.nework.models.mediaPlayers
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -37,21 +37,21 @@ class AudioPlayer @Inject constructor(
     fun playStopAudio(
         dataItem: DataItem? = null,
         binding: AudioPlayerBinding,
-        newAudioAttachment: NewAudioAttachment? = null
+        newMediaAttachment: NewMediaAttachment? = null
     ) {
 
-        if (dataItem == null && newAudioAttachment == null) return
+        if (dataItem == null && newMediaAttachment == null) return
 
         audioBinding = binding
         audioJob?.cancel()
-        val playing = newAudioAttachment?.nowPlaying ?: dataItem!!.isAudioPlayed
+        val playing = newMediaAttachment?.nowPlaying ?: dataItem!!.isPlayed
         if (!playing) {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer()
             mediaPlayer?.setOnCompletionListener {
                 stopPlaying(dataItem)
             }
-            mediaPlayer?.setDataSource(newAudioAttachment?.url ?: dataItem!!.attachment!!.url)
+            mediaPlayer?.setDataSource(newMediaAttachment?.url ?: dataItem!!.attachment!!.url)
             mediaPlayer?.prepareAsync()
             mediaPlayer?.setOnPreparedListener {
                 it.start()
@@ -79,9 +79,9 @@ class AudioPlayer @Inject constructor(
 
     private fun getNewDataItem(dataItem: DataItem, isStopped: Boolean = true): DataItem {
         return if (dataItem is PostListItem)
-            dataItem.copy(post = dataItem.post.copy(isAudioPlayed = !isStopped))
+            dataItem.copy(post = dataItem.post.copy(isPlayed = !isStopped))
         else
-            (dataItem as EventListItem).copy(event = dataItem.event.copy(isAudioPlayed = !isStopped))
+            (dataItem as EventListItem).copy(event = dataItem.event.copy(isPlayed = !isStopped))
     }
 
     @SuppressLint("SetTextI18n")

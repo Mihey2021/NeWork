@@ -129,15 +129,19 @@
             app:layout_constraintStart_toEndOf="@id/iconType"
             app:layout_constraintTop_toBottomOf="@id/content" />
 
+        <LinearLayout
+            android:id="@+id/attachmentsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/eventDate"
+            android:layout_marginTop="@dimen/common_spacing">
         <FrameLayout
             android:id="@+id/audioPlayerContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toTopOf="@id/videoPlayerContainer"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/eventDate"
-            android:layout_marginTop="@dimen/common_spacing"
             android:visibility="gone"
             tools:visibility="visible">
 
@@ -151,11 +155,7 @@
         <FrameLayout
             android:id="@+id/videoPlayerContainer"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/video_height"
-            app:layout_constraintBottom_toTopOf="@id/attachmentImageView"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/audioPlayerContainer"
+            android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/common_spacing"
             android:visibility="gone"
             tools:visibility="visible">
@@ -166,6 +166,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
         </FrameLayout>
+        </LinearLayout>
 
         <ImageView
             android:id="@+id/attachmentImageView"
@@ -178,7 +179,7 @@
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/videoPlayerContainer"
+            app:layout_constraintTop_toBottomOf="@id/attachmentsLayout"
             tools:srcCompat="@tools:sample/avatars" />
 
         <TextView

@@ -27,6 +27,6 @@ data class EventListItem(val event: Event) : java.io.Serializable, DataItem {
     override val users: Map<Long, UserPreview> get() = event.users
     override val mentionIds: List<Long> get() = listOf()
     override val mentionedMe: Boolean get() = false
-    override val isAudioPlayed: Boolean get() = event.isAudioPlayed
+    override val isPlayed: Boolean get() = event.isPlayed
     override val initInAudioPlayer: Boolean get() = event.initInAudioPlayer
 }

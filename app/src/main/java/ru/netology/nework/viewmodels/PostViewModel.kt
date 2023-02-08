@@ -95,7 +95,7 @@ class PostViewModel @Inject constructor(
                         attachment = changingPost.attachment,
                         ownedByMe = changingPost.ownedByMe,
                         users = changingPost.users,
-                        isAudioPlayed = changingPost.isAudioPlayed,
+                        isPlayed = changingPost.isPlayed,
                         initInAudioPlayer = changingPost.initInAudioPlayer,
                     )
                 PostListItem(postWithLocalChanges)
@@ -184,14 +184,14 @@ class PostViewModel @Inject constructor(
     }
 
     fun playStopAudio(post: Post) {
-        localChanges.changingPosts.values.filter { filteringPost -> filteringPost.isAudioPlayed && filteringPost.id != post.id }
-            .forEach { makeChanges(it.copy(isAudioPlayed = false)) }
-        val changingPost = post.copy(isAudioPlayed = post.isAudioPlayed)
+        localChanges.changingPosts.values.filter { filteringPost -> filteringPost.isPlayed && filteringPost.id != post.id }
+            .forEach { makeChanges(it.copy(isPlayed = false)) }
+        val changingPost = post.copy(isPlayed = post.isPlayed)
         makeChanges(changingPost)
     }
 
     fun getAudioPlayingPost() =
-        localChanges.changingPosts.values.firstOrNull { post -> post.isAudioPlayed }
+        localChanges.changingPosts.values.firstOrNull { post -> post.isPlayed }
 
     fun removeById(id: Long) {
         viewModelScope.launch {

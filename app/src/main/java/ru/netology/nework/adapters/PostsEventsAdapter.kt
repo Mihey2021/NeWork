@@ -13,10 +13,11 @@ import com.bumptech.glide.Glide
 import ru.netology.nework.R
 import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.PostCardBinding
+import ru.netology.nework.databinding.VideoPlayerBinding
 import ru.netology.nework.extensions.loadCircleCrop
 import ru.netology.nework.extensions.loadFromResource
 import ru.netology.nework.models.*
-import ru.netology.nework.models.audioPlayer.AudioPlayer
+import ru.netology.nework.models.mediaPlayers.AudioPlayer
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.utils.AdditionalFunctions
@@ -35,7 +36,8 @@ interface OnInteractionListener {
     fun onPhotoView(photoUrl: String) {}
     fun onCoordinatesClick(coordinates: Coordinates) {}
     fun onAvatarClick(authorId: Long) {}
-    fun onPlayStopAudio(dataItem: DataItem, binding: AudioPlayerBinding) {}
+    fun onPlayStopMedia(dataItem: DataItem, binding: AudioPlayerBinding) {}
+    fun onPlayStopMedia(dataItem: DataItem, binding: VideoPlayerBinding) {}
 }
 
 class PostsAdapter @Inject constructor(
@@ -113,7 +115,7 @@ class ViewHolder @Inject constructor(
             attachmentImageView.visibility = View.GONE
             videoPlayerContainer.visibility = View.GONE
 
-            val playing = dataItem.isAudioPlayed
+            val playing = dataItem.isPlayed
             audioPlayerInclude.playStop.isChecked = playing
             if (!playing) {
                 audioPlayerInclude.duration.text = ""
@@ -144,11 +146,14 @@ class ViewHolder @Inject constructor(
                     AttachmentType.AUDIO -> {
                         audioPlayerContainer.visibility = View.VISIBLE
                         audioPlayerInclude.playStop.setOnClickListener {
-                            onInteractionListener.onPlayStopAudio(dataItem, binding.audioPlayerInclude)
+                            onInteractionListener.onPlayStopMedia(dataItem, binding.audioPlayerInclude)
                         }
                     }
                     else -> {
                         videoPlayerContainer.visibility = View.VISIBLE
+                        videoPlayerInclude.playStop.setOnClickListener{
+                            onInteractionListener.onPlayStopMedia(dataItem, binding.videoPlayerInclude)
+                        }
                     }
                 }
             }

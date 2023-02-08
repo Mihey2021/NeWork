@@ -44,8 +44,8 @@ import ru.netology.nework.databinding.FragmentNewPostBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.*
-import ru.netology.nework.models.audioPlayer.AudioPlayer
-import ru.netology.nework.models.audioPlayer.NewAudioAttachment
+import ru.netology.nework.models.mediaPlayers.AudioPlayer
+import ru.netology.nework.models.mediaPlayers.NewMediaAttachment
 import ru.netology.nework.models.event.EventCreateRequest
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.event.EventType
@@ -940,17 +940,17 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         if (path == null) {
             val currentData = if (data is PostListItem) {
                 val postItem = data as PostListItem
-                postItem.copy(post = postItem.post.copy(isAudioPlayed = !binding.audioPlayerInclude.playStop.isChecked))
+                postItem.copy(post = postItem.post.copy(isPlayed = !binding.audioPlayerInclude.playStop.isChecked))
             } else {
                 val eventItem = data as EventListItem
-                eventItem.copy(event = eventItem.event.copy(isAudioPlayed = !binding.audioPlayerInclude.playStop.isChecked))
+                eventItem.copy(event = eventItem.event.copy(isPlayed = !binding.audioPlayerInclude.playStop.isChecked))
 
             }
             audioPlayer.playStopAudio(currentData, binding.audioPlayerInclude)
         } else {
             audioPlayer.playStopAudio(
                 binding = binding.audioPlayerInclude,
-                newAudioAttachment = NewAudioAttachment(
+                newMediaAttachment = NewMediaAttachment(
                     url = path,
                     nowPlaying = !binding.audioPlayerInclude.playStop.isChecked
                 )

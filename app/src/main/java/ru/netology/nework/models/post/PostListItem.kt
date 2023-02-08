@@ -28,6 +28,6 @@ data class PostListItem(val post: Post) : java.io.Serializable, DataItem {
     override val participantsIds: List<Long> get() = listOf()
     override val participatedByMe: Boolean get() = false
     override val type: EventType get() = EventType.OFFLINE
-    override val isAudioPlayed: Boolean get() = post.isAudioPlayed
+    override val isPlayed: Boolean get() = post.isPlayed
     override val initInAudioPlayer: Boolean get() = post.initInAudioPlayer
 }

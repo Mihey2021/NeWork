@@ -89,7 +89,7 @@ class EventViewModel @Inject constructor(
                         attachment = changingEvent.attachment,
                         ownedByMe = changingEvent.ownedByMe,
                         users = changingEvent.users,
-                        isAudioPlayed = changingEvent.isAudioPlayed,
+                        isPlayed = changingEvent.isPlayed,
                         initInAudioPlayer = changingEvent.initInAudioPlayer,
                     )
                 EventListItem(eventWithLocalChanges)
@@ -177,14 +177,14 @@ class EventViewModel @Inject constructor(
     }
 
     fun playStopAudio(event: Event) {
-        localChanges.changingEvents.values.filter { filteringEvent -> filteringEvent.isAudioPlayed && filteringEvent.id != event.id }
-            .forEach { makeChanges(it.copy(isAudioPlayed = false)) }
-        val changingEvent = event.copy(isAudioPlayed = event.isAudioPlayed)
+        localChanges.changingEvents.values.filter { filteringEvent -> filteringEvent.isPlayed && filteringEvent.id != event.id }
+            .forEach { makeChanges(it.copy(isPlayed = false)) }
+        val changingEvent = event.copy(isPlayed = event.isPlayed)
         makeChanges(changingEvent)
     }
 
     fun getAudioPlayingEvent() =
-        localChanges.changingEvents.values.firstOrNull { event -> event.isAudioPlayed }
+        localChanges.changingEvents.values.firstOrNull { event -> event.isPlayed }
 
     fun removeById(id: Long) {
         viewModelScope.launch {

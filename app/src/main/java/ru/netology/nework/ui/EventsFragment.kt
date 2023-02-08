@@ -29,7 +29,7 @@ import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.DeepLinks
-import ru.netology.nework.models.audioPlayer.AudioPlayer
+import ru.netology.nework.models.mediaPlayers.AudioPlayer
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
@@ -140,7 +140,7 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                 findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${authorId}"))
             }
 
-            override fun onPlayStopAudio(dataItem: DataItem, binding: AudioPlayerBinding) {
+            override fun onPlayStopMedia(dataItem: DataItem, binding: AudioPlayerBinding) {
                 audioPlayer.playStopAudio(dataItem, binding)
             }
 

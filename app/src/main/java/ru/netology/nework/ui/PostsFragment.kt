@@ -23,13 +23,15 @@ import ru.netology.nework.adapters.PostsAdapter
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.FragmentPostsBinding
+import ru.netology.nework.databinding.VideoPlayerBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.DeepLinks
-import ru.netology.nework.models.audioPlayer.AudioPlayer
+import ru.netology.nework.models.mediaPlayers.AudioPlayer
+import ru.netology.nework.models.mediaPlayers.VideoPlayer
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
@@ -58,6 +60,9 @@ class PostsFragment : Fragment() {
 
     @Inject
     lateinit var audioPlayer: AudioPlayer
+
+    @Inject
+    lateinit var videoPlayer: VideoPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -118,8 +123,12 @@ class PostsFragment : Fragment() {
                 findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${authorId}"))
             }
 
-            override fun onPlayStopAudio(dataItem: DataItem, binding: AudioPlayerBinding) {
+            override fun onPlayStopMedia(dataItem: DataItem, binding: AudioPlayerBinding) {
                 audioPlayer.playStopAudio(dataItem, binding)
+            }
+
+            override fun onPlayStopMedia(dataItem: DataItem, binding: VideoPlayerBinding) {
+                videoPlayer.playStopVideo(dataItem, binding)
             }
 
             override fun onPhotoView(photoUrl: String) {
