@@ -90,4 +90,5 @@
     <string name="permission_necessary">Permission necessary</string>
     <string name="request">Request</string>
     <string name="external_storage">External storage</string>
+    <string name="full_screen">Full screen</string>
 </resources>

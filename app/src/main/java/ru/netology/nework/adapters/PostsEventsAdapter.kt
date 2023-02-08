@@ -17,7 +17,7 @@ import ru.netology.nework.databinding.VideoPlayerBinding
 import ru.netology.nework.extensions.loadCircleCrop
 import ru.netology.nework.extensions.loadFromResource
 import ru.netology.nework.models.*
-import ru.netology.nework.models.mediaPlayers.AudioPlayer
+import ru.netology.nework.models.mediaPlayers.CustomMediaPlayer
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.utils.AdditionalFunctions
@@ -38,16 +38,17 @@ interface OnInteractionListener {
     fun onAvatarClick(authorId: Long) {}
     fun onPlayStopMedia(dataItem: DataItem, binding: AudioPlayerBinding) {}
     fun onPlayStopMedia(dataItem: DataItem, binding: VideoPlayerBinding) {}
+    fun onFullScreenVideo(dataItem: DataItem) {}
 }
 
 class PostsAdapter @Inject constructor(
     private val onInteractionListener: OnInteractionListener,
-    private val audioPlayer: AudioPlayer,
+    private val customMediaPlayer: CustomMediaPlayer,
 ) : PagingDataAdapter<PostListItem, ViewHolder>(PostDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = PostCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding, onInteractionListener, audioPlayer)
+        return ViewHolder(binding, onInteractionListener, customMediaPlayer)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -58,11 +59,11 @@ class PostsAdapter @Inject constructor(
 
 class EventsAdapter @Inject constructor(
     private val onInteractionListener: OnInteractionListener,
-    private val audioPlayer: AudioPlayer,
+    private val customMediaPlayer: CustomMediaPlayer,
 ) : PagingDataAdapter<EventListItem, ViewHolder>(EventDiffCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = PostCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding, onInteractionListener, audioPlayer)
+        return ViewHolder(binding, onInteractionListener, customMediaPlayer)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -74,7 +75,7 @@ class EventsAdapter @Inject constructor(
 class ViewHolder @Inject constructor(
     private val binding: PostCardBinding,
     private val onInteractionListener: OnInteractionListener,
-    private val audioPlayer: AudioPlayer,
+    private val customMediaPlayer: CustomMediaPlayer,
 ) : RecyclerView.ViewHolder(binding.root) {
 
     private var additionalText: String = ""
@@ -117,13 +118,14 @@ class ViewHolder @Inject constructor(
 
             val playing = dataItem.isPlayed
             audioPlayerInclude.playStop.isChecked = playing
+            videoPlayerInclude.playStop.isChecked = playing
             if (!playing) {
                 audioPlayerInclude.duration.text = ""
                 audioPlayerInclude.currentPosition.text = ""
                 audioPlayerInclude.seekBar.max = 0
                 audioPlayerInclude.seekBar.progress = 0
             } else {
-                audioPlayer.refreshSeekBar(binding.audioPlayerInclude)
+                customMediaPlayer.refreshSeekBar(binding.audioPlayerInclude)
             }
 
             val attachment = dataItem.attachment
@@ -146,13 +148,22 @@ class ViewHolder @Inject constructor(
                     AttachmentType.AUDIO -> {
                         audioPlayerContainer.visibility = View.VISIBLE
                         audioPlayerInclude.playStop.setOnClickListener {
-                            onInteractionListener.onPlayStopMedia(dataItem, binding.audioPlayerInclude)
+                            onInteractionListener.onPlayStopMedia(
+                                dataItem,
+                                binding.audioPlayerInclude
+                            )
                         }
                     }
                     else -> {
                         videoPlayerContainer.visibility = View.VISIBLE
-                        videoPlayerInclude.playStop.setOnClickListener{
-                            onInteractionListener.onPlayStopMedia(dataItem, binding.videoPlayerInclude)
+                        videoPlayerInclude.playStop.setOnClickListener {
+                            onInteractionListener.onPlayStopMedia(
+                                dataItem,
+                                binding.videoPlayerInclude
+                            )
+                        }
+                        videoPlayerInclude.fullScreen.setOnClickListener {
+                            onInteractionListener.onFullScreenVideo(dataItem)
                         }
                     }
                 }

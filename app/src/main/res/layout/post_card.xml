@@ -129,43 +129,52 @@
             app:layout_constraintStart_toEndOf="@id/iconType"
             app:layout_constraintTop_toBottomOf="@id/content" />
 
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/detailBarrier"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="eventDate"
+            />
+
         <LinearLayout
             android:id="@+id/attachmentsLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/common_spacing"
             android:orientation="vertical"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/eventDate"
-            android:layout_marginTop="@dimen/common_spacing">
-        <FrameLayout
-            android:id="@+id/audioPlayerContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            tools:visibility="visible">
+            app:layout_constraintTop_toBottomOf="@id/detailBarrier">
 
-            <include
-                android:id="@+id/audioPlayerInclude"
-                layout="@layout/audio_player"
+            <FrameLayout
+                android:id="@+id/audioPlayerContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-        </FrameLayout>
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                tools:visibility="visible">
 
-        <FrameLayout
-            android:id="@+id/videoPlayerContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/common_spacing"
-            android:visibility="gone"
-            tools:visibility="visible">
+                <include
+                    android:id="@+id/audioPlayerInclude"
+                    layout="@layout/audio_player"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </FrameLayout>
 
-            <include
-                android:id="@+id/videoPlayerInclude"
-                layout="@layout/video_player"
+            <FrameLayout
+                android:id="@+id/videoPlayerContainer"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"/>
-        </FrameLayout>
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/common_spacing"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <include
+                    android:id="@+id/videoPlayerInclude"
+                    layout="@layout/video_player"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
         </LinearLayout>
 
         <ImageView

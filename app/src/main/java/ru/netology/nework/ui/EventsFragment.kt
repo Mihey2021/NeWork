@@ -23,14 +23,15 @@ import ru.netology.nework.adapters.OnInteractionListener
 import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.FragmentEventsBinding
+import ru.netology.nework.databinding.VideoPlayerBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.DeepLinks
-import ru.netology.nework.models.mediaPlayers.AudioPlayer
 import ru.netology.nework.models.event.EventListItem
+import ru.netology.nework.models.mediaPlayers.CustomMediaPlayer
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
 import ru.netology.nework.utils.AdditionalFunctions.Companion.showErrorDialog
@@ -51,7 +52,7 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
     lateinit var filters: Filters
 
     @Inject
-    lateinit var audioPlayer: AudioPlayer
+    lateinit var customMediaPlayer: CustomMediaPlayer
 
     private var dialog: AlertDialog? = null
     private var authUser: User? = null
@@ -141,7 +142,24 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             }
 
             override fun onPlayStopMedia(dataItem: DataItem, binding: AudioPlayerBinding) {
-                audioPlayer.playStopAudio(dataItem, binding)
+                stopPreviousMedia()
+                customMediaPlayer.playStopAudio(dataItem, binding)
+            }
+
+            override fun onPlayStopMedia(dataItem: DataItem, binding: VideoPlayerBinding) {
+                stopPreviousMedia()
+                customMediaPlayer.playStopVideo(dataItem, binding)
+            }
+
+            override fun onFullScreenVideo(dataItem: DataItem) {
+                val direction =
+                    if (requireParentFragment() is FeedFragment)
+                        FeedFragmentDirections.actionFeedFragmentToVideoFragment(dataItem)
+                    else
+                        UserPageFragmentDirections.actionUserPageFragmentToVideoFragment(
+                            dataItem
+                        )
+                findNavController().navigate(direction)
             }
 
             override fun onPhotoView(photoUrl: String) {
@@ -154,7 +172,7 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
                         )
                 findNavController().navigate(direction)
             }
-        }, audioPlayer)
+        }, customMediaPlayer)
     }
 
     override fun onCreateView(
@@ -164,12 +182,12 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
         viewModel.clearFeedModelState()
 
-        lifecycleScope.launch{
-            audioPlayer.audioPlayerStateChange.collectLatest {
+        lifecycleScope.launch {
+            customMediaPlayer.mediaPlayerStateChange.collectLatest {
                 if (it == null) return@collectLatest
                 val eventListItem = it as? EventListItem
                 if (eventListItem != null)
-                    viewModel.playStopAudio(eventListItem.event)
+                    viewModel.playStopMedia(eventListItem.event)
             }
         }
 
@@ -325,11 +343,15 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
             })
     }
 
-    override fun onPause() {
-        super.onPause()
-        val event = viewModel.getAudioPlayingEvent()
-        if(event != null)
-            audioPlayer.stopPlaying(EventListItem(event = event) as DataItem)
+    private fun stopPreviousMedia() {
+        val event = viewModel.getMediaPlayingEvent()
+        if (event != null) {
+            customMediaPlayer.stopMediaPlaying(EventListItem(event = event) as DataItem)
+        }
     }
 
+    override fun onPause() {
+        stopPreviousMedia()
+        super.onPause()
+    }
 }

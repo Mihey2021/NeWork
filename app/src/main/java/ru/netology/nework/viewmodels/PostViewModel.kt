@@ -183,14 +183,14 @@ class PostViewModel @Inject constructor(
         }
     }
 
-    fun playStopAudio(post: Post) {
+    fun playStopMedia(post: Post) {
         localChanges.changingPosts.values.filter { filteringPost -> filteringPost.isPlayed && filteringPost.id != post.id }
             .forEach { makeChanges(it.copy(isPlayed = false)) }
         val changingPost = post.copy(isPlayed = post.isPlayed)
         makeChanges(changingPost)
     }
 
-    fun getAudioPlayingPost() =
+    fun getMediaPlayingPost() =
         localChanges.changingPosts.values.firstOrNull { post -> post.isPlayed }
 
     fun removeById(id: Long) {

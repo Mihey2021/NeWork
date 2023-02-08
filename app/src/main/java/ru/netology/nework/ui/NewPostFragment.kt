@@ -44,7 +44,7 @@ import ru.netology.nework.databinding.FragmentNewPostBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.dialogs.OnDialogsInteractionListener
 import ru.netology.nework.models.*
-import ru.netology.nework.models.mediaPlayers.AudioPlayer
+import ru.netology.nework.models.mediaPlayers.CustomMediaPlayer
 import ru.netology.nework.models.mediaPlayers.NewMediaAttachment
 import ru.netology.nework.models.event.EventCreateRequest
 import ru.netology.nework.models.event.EventListItem
@@ -78,7 +78,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     lateinit var appAuth: AppAuth
 
     @Inject
-    lateinit var audioPlayer: AudioPlayer
+    lateinit var customMediaPlayer: CustomMediaPlayer
 
     private lateinit var binding: FragmentNewPostBinding
 
@@ -715,18 +715,18 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                         )
                 )
 
-                //На сервере отсекается datetime для существующего Event, нет смысла редактировать - делаем недоступным
-                if (data != null) {
-                    eventDateText.isEnabled = false
-                    eventTimeText.isEnabled = false
-                } else {
+//                //На сервере отсекается datetime для существующего Event, нет смысла редактировать - делаем недоступным
+//                if (data != null) {
+//                    eventDateText.isEnabled = false
+//                    eventTimeText.isEnabled = false
+//                } else {
                     eventDateLayout.setEndIconOnClickListener {
                         showDatePicker()
                     }
                     eventTimeLayout.setEndIconOnClickListener {
                         showTimePicker()
                     }
-                }
+//                }
 
 
                 eventTypeLayout.visibility = View.VISIBLE
@@ -926,13 +926,13 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     override fun onPause() {
         super.onPause()
         if (data is PostListItem) {
-            val post = postViewModel.getAudioPlayingPost()
+            val post = postViewModel.getMediaPlayingPost()
             if (post != null)
-                audioPlayer.stopPlaying(PostListItem(post = post) as DataItem)
+                customMediaPlayer.stopMediaPlaying(PostListItem(post = post) as DataItem)
         } else {
-            val event = eventViewModel.getAudioPlayingEvent()
+            val event = eventViewModel.getMediaPlayingEvent()
             if (event != null)
-                audioPlayer.stopPlaying(EventListItem(event = event) as DataItem)
+                customMediaPlayer.stopMediaPlaying(EventListItem(event = event) as DataItem)
         }
     }
 
@@ -946,9 +946,9 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 eventItem.copy(event = eventItem.event.copy(isPlayed = !binding.audioPlayerInclude.playStop.isChecked))
 
             }
-            audioPlayer.playStopAudio(currentData, binding.audioPlayerInclude)
+            customMediaPlayer.playStopAudio(currentData, binding.audioPlayerInclude)
         } else {
-            audioPlayer.playStopAudio(
+            customMediaPlayer.playStopAudio(
                 binding = binding.audioPlayerInclude,
                 newMediaAttachment = NewMediaAttachment(
                     url = path,
@@ -960,7 +960,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
 
     override fun onStop() {
         super.onStop()
-        audioPlayer.stopPlaying(onlyStop = true)
+        customMediaPlayer.stopMediaPlaying(onlyStop = true)
     }
 
     override fun onDestroy() {

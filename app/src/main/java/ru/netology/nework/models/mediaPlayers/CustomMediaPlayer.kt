@@ -3,7 +3,11 @@ package ru.netology.nework.models.mediaPlayers
 import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaPlayer
+import android.net.Uri
+import android.view.View
+import android.widget.MediaController
 import android.widget.SeekBar
+import android.widget.VideoView
 import androidx.appcompat.app.AlertDialog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -11,7 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import ru.netology.nework.R
 import ru.netology.nework.databinding.AudioPlayerBinding
+import ru.netology.nework.databinding.VideoPlayerBinding
 import ru.netology.nework.dialogs.AppDialogs
+import ru.netology.nework.models.AttachmentType
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.post.PostListItem
@@ -21,16 +27,17 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 private var audioJob: Job? = null
 private var mediaPlayer: MediaPlayer? = MediaPlayer()
+private var videoView: VideoView? = null
 private var dialog: AlertDialog? = null
 
 @Singleton
-class AudioPlayer @Inject constructor(
+class CustomMediaPlayer @Inject constructor(
     @ApplicationContext
     private val context: Context,
 ) {
 
-    private val _audioPlayerStateChange: MutableStateFlow<DataItem?> = MutableStateFlow(null)
-    val audioPlayerStateChange = _audioPlayerStateChange.asStateFlow()
+    private val _mediaPlayerStateChange: MutableStateFlow<DataItem?> = MutableStateFlow(null)
+    val mediaPlayerStateChange = _mediaPlayerStateChange.asStateFlow()
 
     private lateinit var audioBinding: AudioPlayerBinding
 
@@ -49,33 +56,76 @@ class AudioPlayer @Inject constructor(
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer()
             mediaPlayer?.setOnCompletionListener {
-                stopPlaying(dataItem)
+                stopMediaPlaying(dataItem)
             }
             mediaPlayer?.setDataSource(newMediaAttachment?.url ?: dataItem!!.attachment!!.url)
             mediaPlayer?.prepareAsync()
             mediaPlayer?.setOnPreparedListener {
                 it.start()
                 if (dataItem != null)
-                    _audioPlayerStateChange.value = getNewDataItem(dataItem, isStopped = false)
+                    _mediaPlayerStateChange.value = getNewDataItem(dataItem, isStopped = false)
                 initializeSeekBar()
             }
             return
         }
 
-        stopPlaying(dataItem)
+        stopMediaPlaying(dataItem)
         initializeSeekBar()
     }
 
-    fun stopPlaying(dataItem: DataItem? = null, onlyStop: Boolean = false) {
+    fun playStopVideo(
+        dataItem: DataItem? = null,
+        binding: VideoPlayerBinding,
+        newMediaAttachment: NewMediaAttachment? = null,
+        isFullScreen: Boolean = false,
+    ){
+        videoView = binding.videoView
+        val playing = newMediaAttachment?.nowPlaying ?: dataItem!!.isPlayed
+        if(!playing) {
+            if (isFullScreen) {
+                binding.playStop.visibility = View.GONE
+                binding.fullScreen.visibility = View.GONE
+                val mediaController = MediaController(binding.videoView.context)
+                mediaController.setAnchorView(videoView)
+                videoView?.setMediaController(mediaController)
+            }
+            val uri = Uri.parse(newMediaAttachment?.url ?: dataItem!!.attachment!!.url)
+            videoView?.setVideoURI(uri)
+            binding.videoLoadingProgress.visibility = View.VISIBLE
+            videoView?.requestFocus()
+            videoView?.setOnPreparedListener {
+                binding.videoLoadingProgress.visibility = View.GONE
+                videoView?.start()
+                if (dataItem != null)
+                    _mediaPlayerStateChange.value = getNewDataItem(dataItem, isStopped = false)
+            }
+        } else
+        {
+            stopMediaPlaying(dataItem)
+        }
+    }
+
+    fun stopMediaPlaying(dataItem: DataItem? = null, onlyStop: Boolean = false) {
         audioJob?.cancel()
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        videoView?.stopPlayback()
+        videoView = null
         if (onlyStop) return
-        initializeSeekBar()
-        if (dataItem != null)
-            _audioPlayerStateChange.value = getNewDataItem(dataItem)
+        if (dataItem != null) {
+            if(dataItem.attachment?.type == AttachmentType.AUDIO) {
+                initializeSeekBar()
+            }
+            _mediaPlayerStateChange.value = getNewDataItem(dataItem)
+        }
     }
+
+//    fun stopVideoPlaying(dataItem: DataItem? = null) {
+//        videoView?.stopPlayback()
+//        if (dataItem != null)
+//            _mediaPlayerStateChange.value = getNewDataItem(dataItem)
+//    }
 
     private fun getNewDataItem(dataItem: DataItem, isStopped: Boolean = true): DataItem {
         return if (dataItem is PostListItem)

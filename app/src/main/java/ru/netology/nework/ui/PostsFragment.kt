@@ -30,8 +30,7 @@ import ru.netology.nework.filter.Filters
 import ru.netology.nework.models.Coordinates
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.DeepLinks
-import ru.netology.nework.models.mediaPlayers.AudioPlayer
-import ru.netology.nework.models.mediaPlayers.VideoPlayer
+import ru.netology.nework.models.mediaPlayers.CustomMediaPlayer
 import ru.netology.nework.models.post.PostListItem
 import ru.netology.nework.models.user.User
 import ru.netology.nework.utils.AdditionalFunctions
@@ -59,10 +58,7 @@ class PostsFragment : Fragment() {
     lateinit var filters: Filters
 
     @Inject
-    lateinit var audioPlayer: AudioPlayer
-
-    @Inject
-    lateinit var videoPlayer: VideoPlayer
+    lateinit var customMediaPlayer: CustomMediaPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,11 +120,23 @@ class PostsFragment : Fragment() {
             }
 
             override fun onPlayStopMedia(dataItem: DataItem, binding: AudioPlayerBinding) {
-                audioPlayer.playStopAudio(dataItem, binding)
+                stopPreviousMedia()
+                customMediaPlayer.playStopAudio(dataItem, binding)
             }
 
             override fun onPlayStopMedia(dataItem: DataItem, binding: VideoPlayerBinding) {
-                videoPlayer.playStopVideo(dataItem, binding)
+                stopPreviousMedia()
+                customMediaPlayer.playStopVideo(dataItem, binding)
+            }
+
+            override fun onFullScreenVideo(dataItem: DataItem) {
+                val direction = if (requireParentFragment() is FeedFragment)
+                    FeedFragmentDirections.actionFeedFragmentToVideoFragment(dataItem)
+                else
+                    UserPageFragmentDirections.actionUserPageFragmentToVideoFragment(
+                        dataItem
+                    )
+                findNavController().navigate(direction)
             }
 
             override fun onPhotoView(photoUrl: String) {
@@ -142,7 +150,7 @@ class PostsFragment : Fragment() {
                 findNavController().navigate(direction)
             }
 
-        }, audioPlayer)
+        }, customMediaPlayer)
 
         binding.postsList.adapter = adapter.withLoadStateHeaderAndFooter(
             header = DataLoadingStateAdapter(object :
@@ -168,11 +176,12 @@ class PostsFragment : Fragment() {
         viewModel.clearFeedModelState()
 
         lifecycleScope.launch{
-            audioPlayer.audioPlayerStateChange.collectLatest {
+            customMediaPlayer.mediaPlayerStateChange.collectLatest {
                 if (it == null) return@collectLatest
                 val postListItem = it as? PostListItem
-                if (postListItem != null)
-                    viewModel.playStopAudio(postListItem.post)
+                if (postListItem != null) {
+                    viewModel.playStopMedia(postListItem.post)
+                }
             }
         }
 
@@ -307,11 +316,16 @@ class PostsFragment : Fragment() {
             })
     }
 
+    private fun stopPreviousMedia() {
+        val post = viewModel.getMediaPlayingPost()
+        if(post != null) {
+            customMediaPlayer.stopMediaPlaying(PostListItem(post = post) as DataItem)
+        }
+    }
+
     override fun onPause() {
+        stopPreviousMedia()
         super.onPause()
-        val post = viewModel.getAudioPlayingPost()
-        if(post != null)
-            audioPlayer.stopPlaying(PostListItem(post = post) as DataItem)
     }
 
 }

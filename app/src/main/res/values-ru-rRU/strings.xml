@@ -91,4 +91,5 @@
     <string name="permission_necessary">Необходимо разрешение</string>
     <string name="request">Запросить</string>
     <string name="external_storage">Внешнее хранилище</string>
+    <string name="full_screen">На весь экран</string>
 </resources>
