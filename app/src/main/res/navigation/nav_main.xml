@@ -148,8 +148,8 @@
     <fragment
         android:id="@+id/videoFragment"
         android:name="ru.netology.nework.ui.VideoFragment"
-        android:label="video_player"
-        tools:layout="@layout/video_player" >
+        android:label="@string/video"
+        tools:layout="@layout/video_player">
         <argument
             android:name="dataItem"
             app:argType="ru.netology.nework.models.DataItem" />
