@@ -94,7 +94,7 @@ class PostDataSource @Inject constructor(
 
             return LoadResult.Page(
                 data = data,
-                prevKey = null,//if (position == 0L || position == data.firstOrNull()?.id || position == minIdOnFirstPage || position == maxId) null else data.firstOrNull()?.id,
+                prevKey = null,
                 nextKey = data.lastOrNull()?.id
             )
         } catch (e: IOException) {
@@ -107,6 +107,4 @@ class PostDataSource @Inject constructor(
             state.closestItemToPosition(it)?.id
         }
     }
-    //= null
-
 }

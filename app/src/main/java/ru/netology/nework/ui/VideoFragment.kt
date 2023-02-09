@@ -7,10 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import ru.netology.nework.R
 import ru.netology.nework.databinding.VideoPlayerBinding
 import ru.netology.nework.models.DataItem
@@ -47,24 +44,6 @@ class VideoFragment : Fragment(R.layout.video_player) {
             customMediaPlayer.playStopVideo(dataItem = data, binding = binding, isFullScreen = true)
         }
 
-        lifecycleScope.launch {
-            customMediaPlayer.mediaPlayerStateChange.collectLatest {
-                if (it == null) return@collectLatest
-                if (it is PostListItem) {
-                    val postListItem = it as? PostListItem
-                    if (postListItem != null) {
-                        postViewModel.playStopMedia(postListItem.post)
-                    }
-                }
-                if (it is EventListItem) {
-                    val eventListItem = it as? EventListItem
-                    if (eventListItem != null) {
-                        eventViewModel.playStopMedia(eventListItem.event)
-                    }
-                }
-            }
-        }
-
         return binding.root
     }
 
@@ -77,9 +56,9 @@ class VideoFragment : Fragment(R.layout.video_player) {
 
     }
 
-    override fun onStop() {
+    override fun onPause() {
         stopMediaPlayed()
-        super.onStop()
+        super.onPause()
     }
 
 }

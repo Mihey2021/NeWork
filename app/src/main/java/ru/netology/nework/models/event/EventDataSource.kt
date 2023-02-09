@@ -28,7 +28,6 @@ class EventDataSource @Inject constructor(
                     apiService.getEventsBefore(id = params.key, count = params.loadSize)
                 }
                 is LoadParams.Prepend -> {
-                    //apiService.getEventsNewer(id = params.key)
                     apiService.getEventsLatest(params.loadSize)
                 }
                 is LoadParams.Refresh -> {

@@ -69,7 +69,7 @@ abstract class AdditionalFunctions {
             var formattedData = if (returnOriginalDateIfExceptException) stringDateTime else ""
             try {
                 val sdf = SimpleDateFormat(pattern)
-                sdf.timeZone = TimeZone.getTimeZone("UTC")
+                //sdf.timeZone = TimeZone.getTimeZone("UTC")
                 val strToDate = sdf.parse(stringDateTime)
                 formattedData = SimpleDateFormat(patternTo).format(strToDate).toString()
             } catch (e: Exception) {

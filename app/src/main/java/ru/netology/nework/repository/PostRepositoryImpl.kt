@@ -140,7 +140,6 @@ class PostRepositoryImpl @Inject constructor(
                 "file",
                 upload.fileDescription.first.name,
                 upload.fileDescription.first.asRequestBody(upload.fileDescription.third)
-                //"file", upload.fileDescription.first.name, upload.fileDescription.first.asRequestBody("video/mp4".toMediaTypeOrNull())
             )
 
             val response = apiService.media(media)

@@ -92,13 +92,11 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                             }
                         }
                         R.id.myWall -> {
-                            //postViewModel.setFilterBy(authData?.id ?: 0L)
                             findNavController(R.id.nav_host_fragment).navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${appAuth.getAuthorizedUserId()}"))
                             true
                         }
 
                         R.id.feed -> {
-                            //postViewModel.setFilterBy(0L)
                             findNavController(R.id.nav_host_fragment).navigateUp()
                             true
                         }
@@ -115,11 +113,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 this@MainActivity.invalidateMenu()
             }
         }
-
-//        filters.filterBy.observe(this) {
-//            filterValue = it
-//            this.invalidateMenu()
-//        }
     }
 
     private fun clearMenuProvider(currentMenuProvider: MenuProvider?) {

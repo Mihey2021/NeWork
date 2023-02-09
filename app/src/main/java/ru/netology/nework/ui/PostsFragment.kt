@@ -130,6 +130,7 @@ class PostsFragment : Fragment() {
             }
 
             override fun onFullScreenVideo(dataItem: DataItem) {
+                customMediaPlayer.stopMediaPlaying(dataItem)
                 val direction = if (requireParentFragment() is FeedFragment)
                     FeedFragmentDirections.actionFeedFragmentToVideoFragment(dataItem)
                 else
@@ -175,12 +176,11 @@ class PostsFragment : Fragment() {
 
         viewModel.clearFeedModelState()
 
-        lifecycleScope.launch{
+        lifecycleScope.launch {
             customMediaPlayer.mediaPlayerStateChange.collectLatest {
                 if (it == null) return@collectLatest
-                val postListItem = it as? PostListItem
-                if (postListItem != null) {
-                    viewModel.playStopMedia(postListItem.post)
+                if (it is PostListItem) {
+                    viewModel.playStopMedia(it.post)
                 }
             }
         }
@@ -269,7 +269,6 @@ class PostsFragment : Fragment() {
 
     private fun setListenersAndShowPopupMenu(popupMenu: PopupMenu) {
         popupMenu.setOnMenuItemClickListener {
-            //filters.setFilterBy(it.itemId.toLong())
             findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${it.itemId.toLong()}"))
             true
         }
@@ -318,7 +317,7 @@ class PostsFragment : Fragment() {
 
     private fun stopPreviousMedia() {
         val post = viewModel.getMediaPlayingPost()
-        if(post != null) {
+        if (post != null) {
             customMediaPlayer.stopMediaPlaying(PostListItem(post = post) as DataItem)
         }
     }

@@ -185,9 +185,8 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         lifecycleScope.launch {
             customMediaPlayer.mediaPlayerStateChange.collectLatest {
                 if (it == null) return@collectLatest
-                val eventListItem = it as? EventListItem
-                if (eventListItem != null)
-                    viewModel.playStopMedia(eventListItem.event)
+                if (it is EventListItem)
+                    viewModel.playStopMedia(it.event)
             }
         }
 
@@ -264,13 +263,11 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
         }
 
         authViewModel.authData.observe(viewLifecycleOwner) {
-            //if (it != null) authViewModel.getUserById(it.id) else setActionBarSubTitle()
             adapter.refresh()
         }
 
         authViewModel.authUser.observe(viewLifecycleOwner) {
             authUser = it
-            //setActionBarSubTitle(it?.name)
         }
 
         binding.swiperefresh.setOnRefreshListener {
@@ -307,7 +304,6 @@ class EventsFragment : Fragment(R.layout.fragment_events) {
 
     private fun setListenersAndShowPopupMenu(popupMenu: PopupMenu) {
         popupMenu.setOnMenuItemClickListener {
-            //filters.setFilterBy(it.itemId.toLong())
             findNavController().navigate(Uri.parse("${DeepLinks.USER_PAGE.link}${it.itemId.toLong()}"))
             true
         }

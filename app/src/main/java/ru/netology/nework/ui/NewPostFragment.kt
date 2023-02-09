@@ -126,7 +126,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         initUi(data)
 
         setActionBarTitle(data != null)
-        //binding.content.requestFocus()
+        binding.content.requestFocus()
 
         val pickPhotoLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -196,6 +196,9 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         binding.removeAudio.setOnClickListener {
             clearDataAttachment()
         }
+        binding.removeVideo.setOnClickListener {
+            clearDataAttachment()
+        }
 
         val pickVideoLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -205,7 +208,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                             return@registerForActivityResult
                         }
                         Activity.RESULT_OK -> {
-                            //val uri: Uri = getPath(it.data?.data) ?: return@registerForActivityResult
                             clearDataAttachment()
                             val uri: Uri = it.data?.data ?: return@registerForActivityResult
                             val mediaType =
@@ -218,7 +220,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                                     mediaType
                                 )
                             } else {
-                                //postViewModel.changeMedia(uri, uri?.toFile(), AttachmentType.VIDEO)
                                 postViewModel.changeMedia(
                                     uri,
                                     getFile(uri),
@@ -322,7 +323,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         if (data is PostListItem || isNewPost) {
             postViewModel.media.observe(viewLifecycleOwner) {
                 if (it.uri == null && data?.attachment == null) {
-                    //binding.photoContainer.visibility = View.GONE
                     setAttachmentVisibility()
                     return@observe
                 }
@@ -336,7 +336,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                             path = it.fileDescription?.first?.absolutePath
                         )
                     }
-                    else -> Unit
+                    else -> {
+                        setAttachmentVisibility(
+                            attachmentType = attachmentType,
+                            path = it.fileDescription?.first?.absolutePath
+                        )
+                    }
                 }
             }
         }
@@ -344,7 +349,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         if (data is EventListItem || isNewEvent) {
             eventViewModel.media.observe(viewLifecycleOwner) {
                 if ((it.uri == null && data?.attachment == null) && data?.attachment?.type == AttachmentType.IMAGE) {
-                    binding.photoContainer.visibility = View.GONE
+                    setAttachmentVisibility()
                     return@observe
                 }
                 when (val attachmentType = it?.fileDescription?.second ?: data?.attachment?.type) {
@@ -357,7 +362,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                             path = it.fileDescription?.first?.absolutePath
                         )
                     }
-                    else -> Unit
+                    else -> {
+                        setAttachmentVisibility(
+                            attachmentType = attachmentType,
+                            path = it.fileDescription?.first?.absolutePath
+                        )
+                    }
                 }
             }
         }
@@ -470,7 +480,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         AppDialogs.getDialog(requireContext(), AppDialogs.QUESTION_DIALOG,
             title = getString(R.string.permission_necessary),
             message = "${getString(R.string.permission_necessary)}: $msg",
-            //titleIcon = R.drawable,
             positiveButtonTitle = getString(R.string.request),
             onDialogsInteractionListener = object : OnDialogsInteractionListener {
                 override fun onPositiveClickButton() {
@@ -484,6 +493,11 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
     }
 
     private fun clearDataAttachment() {
+
+        binding.photoContainer.visibility = View.GONE
+        binding.audioPlayerContainer.visibility = View.GONE
+        binding.videoPlayerContainer.visibility = View.GONE
+
         if (data == null) {
             if (isNewPost)
                 postViewModel.changeMedia(null, null)
@@ -499,10 +513,6 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             val currentData = data as EventListItem
             currentData.copy(event = currentData.event.copy(attachment = null))
         }
-
-        binding.photoContainer.visibility = View.GONE
-        binding.audioPlayerContainer.visibility = View.GONE
-
     }
 
     private fun setAttachmentVisibility(
@@ -514,6 +524,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         if (attachmentType == null) {
             binding.photoContainer.visibility = View.GONE
             binding.audioPlayerContainer.visibility = View.GONE
+            binding.videoPlayerContainer.visibility = View.GONE
             return
         }
 
@@ -523,6 +534,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             AttachmentType.IMAGE -> {
                 binding.photoContainer.visibility = View.VISIBLE
                 binding.audioPlayerContainer.visibility = View.GONE
+                binding.videoPlayerContainer.visibility = View.GONE
                 if (dataAttachment != null)
                     loadImage(binding.photo, dataAttachment.url)
                 else
@@ -531,12 +543,19 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
             AttachmentType.AUDIO -> {
                 binding.audioPlayerContainer.visibility = View.VISIBLE
                 binding.photoContainer.visibility = View.GONE
+                binding.videoPlayerContainer.visibility = View.GONE
                 binding.audioPlayerInclude.playStop.setOnClickListener {
-                    playStopAudioPlayer(path)
+                    playStopMediaPlayer(path)
                 }
             }
             else -> {
-                Unit
+                binding.videoPlayerContainer.visibility = View.VISIBLE
+                binding.photoContainer.visibility = View.GONE
+                binding.audioPlayerContainer.visibility = View.GONE
+                binding.videoPlayerInclude.fullScreen.visibility = View.GONE
+                binding.videoPlayerInclude.playStop.setOnClickListener {
+                    playStopMediaPlayer(path, isVideo = true)
+                }
             }
         }
     }
@@ -715,19 +734,12 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                         )
                 )
 
-//                //На сервере отсекается datetime для существующего Event, нет смысла редактировать - делаем недоступным
-//                if (data != null) {
-//                    eventDateText.isEnabled = false
-//                    eventTimeText.isEnabled = false
-//                } else {
-                    eventDateLayout.setEndIconOnClickListener {
-                        showDatePicker()
-                    }
-                    eventTimeLayout.setEndIconOnClickListener {
-                        showTimePicker()
-                    }
-//                }
-
+                eventDateLayout.setEndIconOnClickListener {
+                    showDatePicker()
+                }
+                eventTimeLayout.setEndIconOnClickListener {
+                    showTimePicker()
+                }
 
                 eventTypeLayout.visibility = View.VISIBLE
                 val adapter = ArrayWithImageAdapter(
@@ -936,7 +948,7 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
         }
     }
 
-    private fun playStopAudioPlayer(path: String? = null) {
+    private fun playStopMediaPlayer(path: String? = null, isVideo: Boolean = false) {
         if (path == null) {
             val currentData = if (data is PostListItem) {
                 val postItem = data as PostListItem
@@ -946,15 +958,27 @@ class NewPostFragment : Fragment(R.layout.fragment_new_post) {
                 eventItem.copy(event = eventItem.event.copy(isPlayed = !binding.audioPlayerInclude.playStop.isChecked))
 
             }
-            customMediaPlayer.playStopAudio(currentData, binding.audioPlayerInclude)
+            if (isVideo)
+                customMediaPlayer.playStopVideo(currentData, binding.videoPlayerInclude)
+            else
+                customMediaPlayer.playStopAudio(currentData, binding.audioPlayerInclude)
         } else {
-            customMediaPlayer.playStopAudio(
-                binding = binding.audioPlayerInclude,
-                newMediaAttachment = NewMediaAttachment(
-                    url = path,
-                    nowPlaying = !binding.audioPlayerInclude.playStop.isChecked
+            if (isVideo)
+                customMediaPlayer.playStopVideo(
+                    binding = binding.videoPlayerInclude,
+                    newMediaAttachment = NewMediaAttachment(
+                        url = path,
+                        nowPlaying = !binding.videoPlayerInclude.playStop.isChecked
+                    )
                 )
-            )
+            else
+                customMediaPlayer.playStopAudio(
+                    binding = binding.audioPlayerInclude,
+                    newMediaAttachment = NewMediaAttachment(
+                        url = path,
+                        nowPlaying = !binding.audioPlayerInclude.playStop.isChecked
+                    )
+                )
         }
     }
 

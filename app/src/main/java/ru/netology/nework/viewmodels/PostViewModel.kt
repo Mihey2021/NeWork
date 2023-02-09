@@ -166,7 +166,6 @@ class PostViewModel @Inject constructor(
                     _postCreated.value = Unit
                     edited.value = null
                     _media.value = noMedia
-                    //_dataState.value = FeedModelState(needRefresh = it.id == 0L)
                     _dataState.value = FeedModelState(needRefresh = true)
                 } catch (e: ErrorResponse) {
                     _dataState.value = FeedModelState(

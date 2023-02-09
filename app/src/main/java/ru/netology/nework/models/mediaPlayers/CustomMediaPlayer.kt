@@ -17,7 +17,6 @@ import ru.netology.nework.R
 import ru.netology.nework.databinding.AudioPlayerBinding
 import ru.netology.nework.databinding.VideoPlayerBinding
 import ru.netology.nework.dialogs.AppDialogs
-import ru.netology.nework.models.AttachmentType
 import ru.netology.nework.models.DataItem
 import ru.netology.nework.models.event.EventListItem
 import ru.netology.nework.models.post.PostListItem
@@ -39,7 +38,8 @@ class CustomMediaPlayer @Inject constructor(
     private val _mediaPlayerStateChange: MutableStateFlow<DataItem?> = MutableStateFlow(null)
     val mediaPlayerStateChange = _mediaPlayerStateChange.asStateFlow()
 
-    private lateinit var audioBinding: AudioPlayerBinding
+    private var audioBinding: AudioPlayerBinding? = null
+    private var videoBinding: VideoPlayerBinding? = null
 
     fun playStopAudio(
         dataItem: DataItem? = null,
@@ -78,29 +78,30 @@ class CustomMediaPlayer @Inject constructor(
         binding: VideoPlayerBinding,
         newMediaAttachment: NewMediaAttachment? = null,
         isFullScreen: Boolean = false,
-    ){
-        videoView = binding.videoView
+    ) {
+        videoBinding = binding
+        videoView = videoBinding?.videoView
         val playing = newMediaAttachment?.nowPlaying ?: dataItem!!.isPlayed
-        if(!playing) {
+        videoBinding!!.playStop.isChecked = !playing
+        if (!playing || isFullScreen) {
             if (isFullScreen) {
-                binding.playStop.visibility = View.GONE
-                binding.fullScreen.visibility = View.GONE
-                val mediaController = MediaController(binding.videoView.context)
+                videoBinding!!.playStop.visibility = View.GONE
+                videoBinding!!.fullScreen.visibility = View.GONE
+                val mediaController = MediaController(videoBinding!!.videoView.context)
                 mediaController.setAnchorView(videoView)
                 videoView?.setMediaController(mediaController)
             }
             val uri = Uri.parse(newMediaAttachment?.url ?: dataItem!!.attachment!!.url)
             videoView?.setVideoURI(uri)
-            binding.videoLoadingProgress.visibility = View.VISIBLE
+            videoBinding!!.videoLoadingProgress.visibility = View.VISIBLE
             videoView?.requestFocus()
             videoView?.setOnPreparedListener {
-                binding.videoLoadingProgress.visibility = View.GONE
+                videoBinding!!.videoLoadingProgress.visibility = View.GONE
                 videoView?.start()
                 if (dataItem != null)
                     _mediaPlayerStateChange.value = getNewDataItem(dataItem, isStopped = false)
             }
-        } else
-        {
+        } else {
             stopMediaPlaying(dataItem)
         }
     }
@@ -112,20 +113,15 @@ class CustomMediaPlayer @Inject constructor(
         mediaPlayer = null
         videoView?.stopPlayback()
         videoView = null
-        if (onlyStop) return
+        initializeSeekBar()
+        if (onlyStop) {
+            if (videoBinding != null) videoBinding!!.playStop.isChecked = false
+            return
+        }
         if (dataItem != null) {
-            if(dataItem.attachment?.type == AttachmentType.AUDIO) {
-                initializeSeekBar()
-            }
-            _mediaPlayerStateChange.value = getNewDataItem(dataItem)
+            _mediaPlayerStateChange.value = getNewDataItem(dataItem, isStopped = true)
         }
     }
-
-//    fun stopVideoPlaying(dataItem: DataItem? = null) {
-//        videoView?.stopPlayback()
-//        if (dataItem != null)
-//            _mediaPlayerStateChange.value = getNewDataItem(dataItem)
-//    }
 
     private fun getNewDataItem(dataItem: DataItem, isStopped: Boolean = true): DataItem {
         return if (dataItem is PostListItem)
@@ -137,18 +133,18 @@ class CustomMediaPlayer @Inject constructor(
     @SuppressLint("SetTextI18n")
     private fun initializeSeekBar() {
         if (mediaPlayer != null) {
-            audioBinding.playStop.isChecked = true
-            audioBinding.duration.text =
+            audioBinding?.playStop?.isChecked = true
+            audioBinding?.duration?.text =
                 getFormattingTimeString(mediaPlayer!!.duration)
         } else {
-            audioBinding.playStop.isChecked = false
-            audioBinding.duration.text = ""
+            audioBinding?.playStop?.isChecked = false
+            audioBinding?.duration?.text = ""
         }
-        audioBinding.currentPosition.text = ""
-        val seekBar = audioBinding.seekBar
-        seekBar.max = mediaPlayer?.duration ?: 0
-        seekBar.progress = mediaPlayer?.currentPosition ?: 0
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        audioBinding?.currentPosition?.text = ""
+        val seekBar = audioBinding?.seekBar
+        seekBar?.max = mediaPlayer?.duration ?: 0
+        seekBar?.progress = mediaPlayer?.currentPosition ?: 0
+        seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser)
                     mediaPlayer?.seekTo(progress)
@@ -168,8 +164,8 @@ class CustomMediaPlayer @Inject constructor(
                     while (isPlaying) {
                         withContext(Dispatchers.Main) {
                             val currentPosition = mediaPlayer?.currentPosition ?: 0
-                            seekBar.progress = currentPosition
-                            audioBinding.currentPosition.text =
+                            seekBar?.progress = currentPosition
+                            audioBinding?.currentPosition?.text =
                                 if (mediaPlayer == null) "" else getCurrentPositionText(
                                     currentPosition
                                 )

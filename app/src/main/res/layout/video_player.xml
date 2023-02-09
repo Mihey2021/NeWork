@@ -68,7 +68,7 @@
         app:icon="@drawable/ic_baseline_fullscreen_24"
         app:iconPadding="0dp"
         app:iconTint="@color/icon_button_tint"
-        app:layout_constraintTop_toTopOf="@id/videoView"
+        app:layout_constraintBottom_toBottomOf="@id/videoView"
         app:layout_constraintEnd_toEndOf="@id/videoView"
         app:strokeColor="@color/black"
         app:strokeWidth="2dp" />
