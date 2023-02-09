@@ -45,3 +45,6 @@ captures/
 
 ### Gradle ###
 !/gradle/wrapper/gradle-wrapper.jar
+
+##Map key##
+maps.properties

@@ -53,7 +53,7 @@ object AppDialogs {
                     setMessage(message)
                     setPositiveButton(
                         positiveButtonTitle
-                            ?: context.resources.getString(R.string.ok_text)
+                            ?: context.resources.getString(android.R.string.ok)
                     ) { dialog, _ ->
                         onDialogsInteractionListener?.onPositiveClickButton()
                         dialog.dismiss()

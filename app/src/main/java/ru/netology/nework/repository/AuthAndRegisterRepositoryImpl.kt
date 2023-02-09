@@ -1,38 +1,48 @@
 package ru.netology.nework.repository
 
+import android.content.Context
+import com.google.gson.Gson
+import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import ru.netology.nework.R
 import ru.netology.nework.api.ApiService
-import ru.netology.nework.errors.ApiError
-import ru.netology.nework.errors.AuthorizationError
-import ru.netology.nework.errors.NetworkError
-import ru.netology.nework.errors.RegistrationError
-import ru.netology.nework.errors.UnknownError
+import ru.netology.nework.errors.*
 import ru.netology.nework.models.MediaUpload
 import ru.netology.nework.models.Token
 import java.io.IOException
 import javax.inject.Inject
 
+private val gson = Gson()
+
 class AuthAndRegisterRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
-): AuthAndRegisterRepository {
+    @ApplicationContext
+    private val context: Context,
+) : AuthAndRegisterRepository {
 
     override suspend fun authentication(login: String, pass: String): Token {
         try {
             val response = apiService.authentication(login, pass)
             if (!response.isSuccessful) {
                 //При неверном логине или пароле сервер возвращает код 400
-                if (response.code() == 400)
-                    throw AuthorizationError
-                else
-                    throw ApiError(response.code(), response.message())
+                if (response.code() == 400) {
+                    val errJson = response.errorBody()?.string()
+                    if (errJson.isNullOrBlank()) throw UnknownError
+                    throw getErrorResponse(errJson)
+                } else
+                    throw NetworkError
             }
-            return response.body() ?: throw ApiError(response.code(), response.message())
-        } catch (e: AuthorizationError) {
-            throw AuthorizationError
+
+            return response.body() ?: throw getErrorResponse()
+
+        } catch (e: ErrorResponse) {
+            throw e
+        } catch (e: NetworkError) {
+            throw e
         } catch (e: IOException) {
-            throw NetworkError
+            throw e
         } catch (e: Exception) {
             throw UnknownError
         }
@@ -42,18 +52,26 @@ class AuthAndRegisterRepositoryImpl @Inject constructor(
         try {
             val response = apiService.registration(login, pass, name)
             if (!response.isSuccessful) {
-                //TODO: Проверить!!!
-                //Если пользователь с таким логином существует, сервер возвращает код 400
-                if (response.code() == 400)
-                    throw RegistrationError
-                else
-                    throw ApiError(response.code(), response.message())
+                when (response.code()) {
+                    400, 500 -> {
+                        val errJson = response.errorBody()?.string()
+                        if (errJson.isNullOrBlank()) throw UnknownError
+                        throw getErrorResponse(errJson)
+                    }
+                    else -> {
+                        throw NetworkError
+                    }
+                }
             }
-            return response.body() ?: throw ApiError(response.code(), response.message())
-        } catch (e: RegistrationError) {
-            throw RegistrationError
+
+            return response.body() ?: throw getErrorResponse()
+
+        } catch (e: ErrorResponse) {
+            throw e
+        } catch (e: NetworkError) {
+            throw e
         } catch (e: IOException) {
-            throw NetworkError
+            throw e
         } catch (e: Exception) {
             throw UnknownError
         }
@@ -67,23 +85,47 @@ class AuthAndRegisterRepositoryImpl @Inject constructor(
     ): Token {
         try {
             val media = MultipartBody.Part.createFormData(
-                "file", avatar.file.name, avatar.file.asRequestBody()
+                "file",
+                avatar.fileDescription.first.name,
+                avatar.fileDescription.first.asRequestBody(avatar.fileDescription.third)
             )
             val response = apiService.registerWithPhoto(login, pass, name, media)
             if (!response.isSuccessful) {
-                //Если пользователь с таким логином существует, сервер возвращает код 403.
-                if (response.code() == 403)
-                    throw RegistrationError
-                else
-                    throw ApiError(response.code(), response.message())
+                when (response.code()) {
+                    400, 500 -> {
+                        val errJson = response.errorBody()?.string()
+                        if (errJson.isNullOrBlank()) throw UnknownError
+                        throw getErrorResponse(errJson)
+                    }
+                    403 -> {
+                        throw RegistrationError //Если пользователь с таким логином существует, сервер возвращает код 403.
+                    }
+                    else -> {
+                        throw NetworkError
+                    }
+                }
             }
-            return response.body() ?: throw ApiError(response.code(), response.message())
+
+            return response.body() ?: throw getErrorResponse()
+
         } catch (e: RegistrationError) {
             throw RegistrationError
+        } catch (e: ErrorResponse) {
+            throw e
+        } catch (e: NetworkError) {
+            throw e
         } catch (e: IOException) {
-            throw NetworkError
+            throw e
         } catch (e: Exception) {
             throw UnknownError
         }
+    }
+
+    private fun getErrorResponse(errJson: String? = null): Throwable {
+        if (errJson.isNullOrBlank()) return ErrorResponse(context.getString(R.string.error_empty_response))
+        return gson.fromJson(
+            errJson,
+            ErrorResponse::class.java
+        )
     }
 }

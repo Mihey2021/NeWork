@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import ru.netology.nework.models.Token
 import javax.inject.Inject
@@ -22,9 +21,9 @@ class AppAuth @Inject constructor(
 
     init {
         val token = prefs.getString(TOKEN_KEY, null)
-        val id = prefs.getInt(ID_KEY, 0)
+        val id = prefs.getLong(ID_KEY, 0)
 
-        if (token == null || id == 0) {
+        if (token == null || id == 0L) {
             removeAuth()
         } else {
             _authStateFlow.value = Token(id, token)
@@ -32,13 +31,17 @@ class AppAuth @Inject constructor(
     }
 
     @Synchronized
-    fun setAuth(id: Int, token: String) {
+    fun setAuth(id: Long, token: String) {
         _authStateFlow.value = Token(id, token)
         prefs.edit {
             putString(TOKEN_KEY, token)
-            putInt(ID_KEY, id)
+            putLong(ID_KEY, id)
         }
     }
+
+    fun getAuthorizedUserId(): Long =
+        authStateFlow.value?.id ?: 0L
+
 
     @Synchronized
     fun removeAuth() {

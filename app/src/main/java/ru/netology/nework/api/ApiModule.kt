@@ -13,6 +13,7 @@ import retrofit2.create
 import ru.netology.nework.BuildConfig
 import ru.netology.nework.BuildConfig.BASE_URL
 import ru.netology.nework.auth.AppAuth
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -48,6 +49,8 @@ class ApiModule {
     ): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(logging)
+        .writeTimeout(30, TimeUnit.MINUTES)
+        .readTimeout(30, TimeUnit.MINUTES)
         .build()
 
     @Singleton

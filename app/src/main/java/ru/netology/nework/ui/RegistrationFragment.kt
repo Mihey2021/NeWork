@@ -4,13 +4,13 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toFile
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.github.dhaval2404.imagepicker.ImagePicker
@@ -22,8 +22,6 @@ import ru.netology.nework.auth.AppAuth
 import ru.netology.nework.databinding.FragmentRegistrationBinding
 import ru.netology.nework.dialogs.AppDialogs
 import ru.netology.nework.utils.AndroidUtils
-import ru.netology.nework.utils.MenuState
-import ru.netology.nework.utils.MenuStates
 import ru.netology.nework.viewmodels.RegistrationViewModel
 import javax.inject.Inject
 
@@ -44,9 +42,6 @@ class RegistrationFragment : Fragment() {
     ): View {
 
         val binding =  FragmentRegistrationBinding.inflate(inflater, container, false)
-
-        MenuState.setMenuState(MenuStates.HIDE_STATE)
-        requireActivity().invalidateMenu()
 
         with(binding) {
             val pickPhotoLauncher =
